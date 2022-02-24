@@ -12,4 +12,5 @@ dependencies:
   - jupyterlab
   - sphinx
   - spyder
+  - ovito
 

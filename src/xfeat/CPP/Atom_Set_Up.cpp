@@ -16,10 +16,12 @@ extern void get_n_atoms(){
     PI = 4.0 * atan(1.0);
         
     ifstream inputfile_atom;
-	inputfile_atom.open("temp/relaxed_perfect_crystal.imd");
+	inputfile_atom.open(temp_dir + "/relaxed_perfect_crystal.imd");
 
 	if (inputfile_atom == NULL) {
 		cout << "File relaxed_perfect_crystal.imd not exist!" << endl;
+		cout << (temp_dir + "/relaxed_perfect_crystal.imd") << endl;
+		cout << temp_dir << " : " << endl;
 		exit(EXIT_FAILURE);
 	}
 
@@ -108,7 +110,7 @@ extern void atom_set_up(){
     
     */
 	ifstream inputfile;
-	inputfile.open("temp/relaxed_perfect_crystal.imd");
+	inputfile.open(temp_dir + "/relaxed_perfect_crystal.imd");
 
 	if (inputfile == NULL) {
 		cout << "File 'relaxed_perfect_crystal.imd' not exist!" << endl;
@@ -116,7 +118,7 @@ extern void atom_set_up(){
 	}
 
 	ofstream myfile;
-	myfile.open("temp/relaxed_perfect_crystal_with_atom_type.imd");
+	myfile.open(temp_dir + "/relaxed_perfect_crystal_with_atom_type.imd");
 
 	int number, type;
 	double mass, x, y, z;

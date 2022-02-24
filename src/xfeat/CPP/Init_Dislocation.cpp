@@ -15,7 +15,7 @@ void atom_element() {
     */
 
 	ifstream inputfile_atom;
-	inputfile_atom.open("temp/relaxed_perfect_crystal_with_atom_type.imd");
+	inputfile_atom.open(temp_dir + "/relaxed_perfect_crystal_with_atom_type.imd");
 
 	if (inputfile_atom == NULL) {
 		cout << "File 'relaxed_perfect_crystal_with_atom_type.imd' does not exist!" << endl;
@@ -493,7 +493,7 @@ void init_atom_config() {
     
     */
 	ifstream inputfile_atom;
-	inputfile_atom.open("temp/relaxed_perfect_crystal_with_atom_type.imd");
+	inputfile_atom.open(temp_dir + "/relaxed_perfect_crystal_with_atom_type.imd");
 
 	if (inputfile_atom == NULL) {
 		cout << "File 'relaxed_perfect_crystal_with_atom_type.imd' does not exist!" << endl;
@@ -501,7 +501,7 @@ void init_atom_config() {
 	}
 
 	ofstream myfile;
-	myfile.open("temp/atomistic_dislocation_with_fem_solution.imd");
+	myfile.open(temp_dir + "/atomistic_dislocation_with_fem_solution.imd");
 
 	double vx, vy, vz, Epot, eam_rho;
 	int number, type;
@@ -622,7 +622,7 @@ void atom_configuration() {
     
     */
 	ifstream inputfile_atom;
-	inputfile_atom.open("temp/relaxed_atomistic_dislocation_structure.00000.ss");
+	inputfile_atom.open(temp_dir + "/relaxed_atomistic_dislocation_structure.00000.ss");
 
 	if (inputfile_atom == NULL) {
 		cout << "File relaxed_atomistic_dislocation_structure.00000.ss does not exist!" << endl;
@@ -630,7 +630,7 @@ void atom_configuration() {
 	}
 
 	ofstream myfile;
-	myfile.open("temp/atomistic_dislocation_with_fem_solution.imd");
+	myfile.open(temp_dir + "/atomistic_dislocation_with_fem_solution.imd");
 
 	double vx, vy, vz, Epot, eam_rho;
 	int number, type;
@@ -724,7 +724,7 @@ void nodal_displacement() {
     */
 
 	ifstream inputfile_atom_disp;
-	inputfile_atom_disp.open("temp/relaxed_atomistic_dislocation_structure.00000.ss");
+	inputfile_atom_disp.open(temp_dir + "/relaxed_atomistic_dislocation_structure.00000.ss");
 
 	if (inputfile_atom_disp == NULL) {
 		cout << "File 'relaxed_atomistic_dislocation_structure' does not exist!" << endl;
@@ -732,7 +732,7 @@ void nodal_displacement() {
 	}
 
 	ifstream inputfile_atom;
-	inputfile_atom.open("temp/relaxed_perfect_crystal_with_atom_type.imd");
+	inputfile_atom.open(temp_dir + "/relaxed_perfect_crystal_with_atom_type.imd");
 	/* THIS INFORMATION SHOULD BE STORED WHEN GENERATING THE FILE:
 	data_disp_un */
 	if (inputfile_atom == NULL) {

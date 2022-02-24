@@ -19,8 +19,6 @@ from xfeat.basic import rot_elast_tens
 class Model(object):
     def __init__(self, mat, size=500):
         cdef int nd = 4  # number of nodal DOF (3 Cartesian + 1 extended)
-        #cdef double PI = 4.0 * np.atan(1.0)
-        #xfc.PI = PI
         self.fem_size = size  # size of FEM part
         self.bv = None  # Burgers vector
         self.nodes = None  # nodal positions
@@ -56,10 +54,24 @@ class Model(object):
 
         # create temp directory for atomistic files
         cwd = os.getcwd()
-        self.temp = cwd + '/temp'
+        path = ''
+        pel = cwd.split('/')
+        for hs in pel[0:pel.index('XFEAt')+1]:
+            path += hs+'/'
+        self.main = path
+        self.temp = path + '/temp'
+        self.md_dir = path + 'Fe_MD'
+        self.libs = path + 'libs'
         if not os.path.exists(self.temp):
             os.makedirs(self.temp)
-
+        if not os.path.exists(self.md_dir):
+            raise RuntimeError('Directory "{}" is not existing.'
+                               .format(self.md_dir))
+        if not os.path.isfile(self.md_dir+'/imd_eam_fire_homdef_stress_nbl'):
+            raise RuntimeError('IMD executable "imd_eam_fire_homdef_stress_nbl" is not existing in path {}.'
+                               .format(self.md_dir))
+        hh = self.temp.encode()
+        xfc.temp_dir = hh
         
     def atoms(self):
         '''
@@ -102,11 +114,13 @@ class Model(object):
             fd.write('box_z    {}\n'.format(sz))
         
         # create crystal structure with java tool (Step 2)
-        os.system('java -jar JMakeConfig.jar {}'\
-                  .format(self.temp+'/imd_create_cryst.param'))
+        os.system(' cd {}'.format(self.main))
+        os.system('java -jar {0}/JMakeConfig.jar {1}'\
+                  .format(self.libs, self.temp+'/imd_create_cryst.param'))
         os.system('mv crystal.conf {}'.format(self.temp))
         # relax crystal with fire algorithm in IMD (Step 3)
-        os.system('cd Fe_MD; ./imd_eam_fire_homdef_stress_nbl -p Fe101-glok-sample.param')
+        os.system('cd {}; ./imd_eam_fire_homdef_stress_nbl -p Fe101-glok-sample.param'
+                  .format(self.md_dir))
         os.system('mv {0}/relaxed_perfect_crystal.imd.00000.ss {0}/relaxed_perfect_crystal.imd'\
                   .format(self.temp))
         os.system('rm {0}/*eng {0}/*itr {0}/*ssdef {0}/*chkpt; cd ..'\
@@ -322,7 +336,8 @@ class Model(object):
 
         '''
         t0 = time.time()
-        os.system('cd Fe_MD; ./imd_eam_fire_homdef_stress_nbl -p Fe101-fire-disloc-sample.param')
+        os.system('cd {0}; ./imd_eam_fire_homdef_stress_nbl -p Fe101-fire-disloc-sample.param'
+                  .format(self.md_dir))
         t1 = time.time()
         if os.path.isfile('{}/relaxed_atomistic_dislocation_structure.00000.ssitr'
                      .format(self.temp)):

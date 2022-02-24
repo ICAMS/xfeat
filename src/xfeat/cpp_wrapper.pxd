@@ -6,7 +6,7 @@
 Created on Sun Feb  6 17:46:17 2022
 
 @author: alexander
-"""
+
 cdef extern from "<vector>" namespace "std":
     cdef cppclass vector[T]:
         cppclass iterator:
@@ -20,6 +20,9 @@ cdef extern from "<vector>" namespace "std":
         T& at(int)
         iterator begin()
         iterator end()
+"""
+from libcpp.string cimport string
+from libcpp.vector cimport vector
 
 cdef extern from "cpp_wrapper.cpp":
     pass
@@ -27,6 +30,7 @@ cdef extern from "cpp_wrapper.cpp":
 cdef extern from "cpp_wrapper.h":
     double PI
     # Atom_set_up definitios
+    string temp_dir
     double shift[2]
     double dist[3]
     double Lx

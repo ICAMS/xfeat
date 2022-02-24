@@ -14,6 +14,7 @@
 double PI;
 
 // definitions for Atom_Set_up
+std::string temp_dir;
 double fem_size;
 double Lx, Ly, Lz;
 int natom = 0;
