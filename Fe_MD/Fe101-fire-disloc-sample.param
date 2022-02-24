@@ -1,0 +1,51 @@
+
+ensemble	glok
+
+coordname	../temp/atomistic_dislocation_with_fem_solution.imd
+outfiles	../temp/relaxed_atomistic_dislocation_structure
+
+core_potential_file     ./POTENTIAL/phi_hepburn
+atomic_e-density_file   ./POTENTIAL/rho_hepburn
+embedding_energy_file   ./POTENTIAL/emb_en_hepburn
+
+maxsteps        80000
+total_types	5
+ntypes          2
+box_from_header 1
+pbc_dirs        0 0 1
+cpu_dim         2 2 1
+
+relax_dirs 0 0 1
+
+fire_decfac          0.5     
+fire_incfac          1.1          
+fire_maxtimestep    0.001 
+fire_minsteps       5
+fire_mix            0.01
+fire_mixdec         0.99
+
+restrictionvector 4	0 0 0
+restrictionvector 3	1 1 1
+restrictionvector 2	1 1 1
+restrictionvector 1	1 1 1
+restrictionvector 0	1 1 1
+
+timestep        0.00001
+
+eng_int         2
+checkpt_int     5000
+
+
+force_int 5000
+force_all  1
+
+fnorm_threshold 1e-7
+
+bulk_module     1.06
+shear_module    0.510
+relax_rate      0.1
+relax_mode      axial
+
+nbl_margin	0.25
+seed            417
+

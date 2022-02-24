@@ -1,0 +1,15 @@
+name: xfeat
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - cython
+  - numpy
+  - matplotlib
+  - scipy
+  - pytest
+  - jupyter
+  - jupyterlab
+  - sphinx
+  - spyder
+
