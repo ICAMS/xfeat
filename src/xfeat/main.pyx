@@ -18,7 +18,6 @@ from xfeat.basic import rot_elast_tens
 
 class Model(object):
     def __init__(self, mat, size=500):
-        cdef int nd = 4  # number of nodal DOF (3 Cartesian + 1 extended)
         self.fem_size = size  # size of FEM part
         self.bv = None  # Burgers vector
         self.nodes = None  # nodal positions
@@ -37,7 +36,6 @@ class Model(object):
         self.JJglob = None  # Pointer to equation number from full nodal DOF
         self.u = None  # nodal displacements in dense notation
         self.xdof = None  # number of xtended degrees of freedom
-        self.ND = nd
         
         self.mat = mat
         self. lp = self.mat['lp']  # lattice parameter
@@ -70,8 +68,10 @@ class Model(object):
         if not os.path.isfile(self.md_dir+'/imd_eam_fire_homdef_stress_nbl'):
             raise RuntimeError('IMD executable "imd_eam_fire_homdef_stress_nbl" is not existing in path {}.'
                                .format(self.md_dir))
-        hh = self.temp.encode()
-        xfc.temp_dir = hh
+        tdir = self.temp.encode()
+        xfc.temp_dir = tdir
+        xfc.fem_size = self.fem_size
+        xfc.PI = np.pi
         
     def atoms(self):
         '''
@@ -125,8 +125,7 @@ class Model(object):
                   .format(self.temp))
         os.system('rm {0}/*eng {0}/*itr {0}/*ssdef {0}/*chkpt; cd ..'\
                   .format(self.temp))
-        xfc.fem_size = self.fem_size
-        xfc.get_n_atoms()  # get number of atoms and allocate memory
+        #xfc.get_n_atoms()  # get number of atoms and allocate memory
         xfc.atom_set_up()  # define types for atoms on which BC are applied
         self.bv = xfc.bv  # Burgers vector
         if np.abs(2.*self.bv/np.sqrt(3.) - self.lp) > 1.e-9:
@@ -151,7 +150,6 @@ class Model(object):
         ----------
         Nnode
         nodes
-        n_cnstr
         NEL
         elmts
         el_ctr
@@ -185,8 +183,8 @@ class Model(object):
         self.nodes[:, 0] = xfc.Xglob
         self.nodes[:, 1] = xfc.Yglob
         self.nodes[:, 2] = xfc.Zglob
-        self.n_cnstr = xfc.NCONT
-        self.nodes_c = np.array(xfc.ContraintNodes, dtype=int)
+        #self.n_cnstr = xfc.NCONT
+        #self.nodes_c = np.array(xfc.ContraintNodes, dtype=int)
         LOTOGO = np.array(xfc.LOTOGO, dtype=int)
         self.NEL = int(len(LOTOGO) / 8)
         self.elmts = LOTOGO.reshape((self.NEL, 8))
@@ -232,7 +230,7 @@ class Model(object):
 
         '''
         xfc.Fglob = np.zeros(self.NDF, dtype=np.double)
-        xfc.iter_matrix()  # update Fglob
+        xfc.update_fglob()  # update Fglob
         self.Fglob = np.array(xfc.Fglob, dtype=np.double)
         F_vec = np.zeros(self.xdof, dtype=np.double)
         F_vec[0:self.NDF] = self.Fglob
@@ -276,14 +274,14 @@ class Model(object):
         '''
         # create Volterra screw dislocation by introducing a shift in
         # XFEM elements and atomic core
-        xfc.create_volterra_dis()
+        xfc.create_volterra_dis()  # create displacements in XFEM region
         self.ubc = np.array(xfc.ENFRDISPglob[3:], dtype=np.double)
         self.solve()  # calculate nodal displacements under BC of shift
         xfc.atom_element()  # assign type 4 atoms to elements
         xfc.atom_node()  # assign type 2 atoms to nodes
         xfc.displacement_interpolation()  # calculate strain on type 4 atoms
         # create IMD input file with updates positions of type 4 atoms
-        xfc.init_atom_config()
+        xfc.init_screw_dis()  # create dislocation in atomic core
         
     def atom_bc(self):
         '''

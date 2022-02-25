@@ -1214,8 +1214,8 @@ void init_matrix() {
 	skylineTOcompressedarray();
 }
 
-void iter_matrix() {
-    /* Update Fglob
+void update_fglob() {
+    /* Update global force vector
     */
     double XLOC[NODEN], YLOC[NODEN], ZLOC[NODEN];
 
@@ -1229,6 +1229,31 @@ void iter_matrix() {
 		ENFORCEDFORCE(XLOC, YLOC, ZLOC, IEL);
 		Assem_force(IEL);
 		DISLOCATIONELEMENTFORCE(XLOC, YLOC, ZLOC, IEL);
+	}
+}
+
+void create_volterra_dis() {
+    /* create BC for Volterra dislocation on constraint nodes
+    
+    Parameters:
+
+    */
+    int i, inode;
+    double yc;
+    
+    // outer boundary
+    for (i = 0; i < NENFD; i++) {
+		inode = ncstr_o[i];
+		ENFRDISPglob[3*inode    ] = 0.0;
+		ENFRDISPglob[3*inode + 1] = 0.0;
+		ENFRDISPglob[3*inode + 2] = bv * atan2(Yglob[inode-1], Xglob[inode-1])/(2.0*PI);
+	}	
+	//inner boundary
+	for (i = 0; i < NCONSNODE; i++) {
+	    inode = ncstr_i[i];
+		ENFRDISPglob[3*inode    ] = 0.0;
+		ENFRDISPglob[3*inode + 1] = 0.0;
+	    ENFRDISPglob[3*inode + 2] = bv * atan2(Yglob[inode-1], Xglob[inode-1])/(2.0*PI);
 	}
 }
 

@@ -12,6 +12,6 @@
 using namespace std;
 
 #include "CPP/Atom_Set_Up.cpp"
-#include "CPP/FEM_Mesh.cpp"
+#include "CPP/XFEM.cpp"
 #include "CPP/Init_Dislocation.cpp"
 

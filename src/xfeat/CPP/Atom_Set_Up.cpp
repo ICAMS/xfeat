@@ -1,96 +1,3 @@
-/*
- ============================================================================
- Name        : Atom_Set_Up.cpp
- ============================================================================
- */
-
-extern void get_n_atoms(){
-    /* Read atom file to get number of atoms and allocate memory for 
-       storage of atoms .
-    
-    Attributes:
-    PI
-    Lx, Ly, Lz
-    cor_type4
-    */
-    PI = 4.0 * atan(1.0);
-        
-    ifstream inputfile_atom;
-	inputfile_atom.open(temp_dir + "/relaxed_perfect_crystal.imd");
-
-	if (inputfile_atom == NULL) {
-		cout << "File relaxed_perfect_crystal.imd not exist!" << endl;
-		cout << (temp_dir + "/relaxed_perfect_crystal.imd") << endl;
-		cout << temp_dir << " : " << endl;
-		exit(EXIT_FAILURE);
-	}
-
-	std::string line;
-	char *token;
-
-	while ((std::getline(inputfile_atom, line)) && line[0] == '#') {
-
-		if (line[1] == 'X') {
-
-			int ntokens = 1;
-
-			token = strtok(&line[0], " ");
-
-			while ((token = strtok(NULL, " ")) != NULL) {
-
-				ntokens = ntokens + 1;
-
-				switch (ntokens) {
-				case 2:
-					Lx = strtod(token, NULL);
-					break;
-				}
-			}
-		}
-
-		if (line[1] == 'Y') {
-
-			int ntokens = 1;
-
-			token = strtok(&line[0], " ");
-
-			while ((token = strtok(NULL, " ")) != NULL) {
-
-				ntokens = ntokens + 1;
-
-				switch (ntokens) {
-				case 3:
-					Ly = strtod(token, NULL);
-					break;
-				}
-			}
-		}
-
-		if (line[1] == 'Z') {
-
-			int ntokens = 1;
-
-			token = strtok(&line[0], " ");
-
-			while ((token = strtok(NULL, " ")) != NULL) {
-				ntokens = ntokens + 1;
-				switch (ntokens) {
-				case 4:
-					Lz = strtod(token, NULL);
-					break;
-				}
-			}
-		}
-	}
-
-
-	inputfile_atom.close();
-
-	atom_id = (int *)malloc(Lx*Ly*Lz*sizeof(int));
-	coords = (double *)malloc(3*Lx*Ly*Lz*sizeof(double));
-	masses = (double *)malloc(Lx*Ly*Lz*sizeof(double));
-}
-
 extern void atom_set_up(){
     /* Read atomic structure and set atoms types to which boundary 
     conditions will be applied later. Write out new IMD input file with types.
@@ -100,6 +7,9 @@ extern void atom_set_up(){
             move freely during relaxation and serve as BC for inner XFEM boundary nodes
     type 4: restricted atoms that are coupled to XFEM distortions, do not move
             during relaxation
+            
+    reads: relaxed_perfect_crystal.imd
+    creates: relaxed_perfect_crystal_with_atom_type.imd
     
     Attributes
     ----------
@@ -107,13 +17,17 @@ extern void atom_set_up(){
     coords
     masses
     natom
+    n_type2
+    n_type4
+    aID
+    ind_type4
     
     */
 	ifstream inputfile;
 	inputfile.open(temp_dir + "/relaxed_perfect_crystal.imd");
 
 	if (inputfile == NULL) {
-		cout << "File 'relaxed_perfect_crystal.imd' not exist!" << endl;
+		cout << "File 'relaxed_perfect_crystal.imd' does not exist!" << endl;
 		exit(EXIT_FAILURE);
 	}
 
@@ -293,9 +207,9 @@ extern void atom_set_up(){
 			}
 
 			atom_id[natom] = number;
-			coords[3*natom  ] = x;
-			coords[3*natom+1] = y;
-			coords[3*natom+2] = z;
+			coords[number][0] = x;
+			coords[number][1] = y;
+			coords[number][2] = z;
 			masses[natom] = mass;
 
 			natom++;
@@ -361,25 +275,33 @@ extern void atom_set_up(){
 	}
 	
     // assign atom types
+    n_type4 = 0;
+	n_type2 = 0;
 	for (count = 0; count < natom; count++) {
-		if (((fabs(coords[3*count]-ref_coord_low[0]) < 0.2*plane_dist[0]) && (coords[3*count+1] >= ref_coord_low[1]-0.2*plane_dist[1]) && (coords[3*count+1] <= ref_coord_high[1]+0.2*plane_dist[1])) ||
-		    ((fabs(coords[3*count+1]-ref_coord_low[1]) < 0.2*plane_dist[1]) && (coords[3*count] >= ref_coord_low[0]-0.2*plane_dist[0]) && (coords[3*count] <= ref_coord_high[0]+0.2*plane_dist[0])) ||
-		    ((fabs(coords[3*count]-ref_coord_high[0]) < 0.2*plane_dist[0]) && (coords[3*count+1] >= ref_coord_low[1]-0.2*plane_dist[1]) && (coords[3*count+1] <= ref_coord_high[1]+0.2*plane_dist[1])) ||
-		    ((fabs(coords[3*count+1]-ref_coord_high[1]) < 0.2*plane_dist[1]) && (coords[3*count] >= ref_coord_low[0]-0.2*plane_dist[0]) && (coords[3*count] <= ref_coord_high[0]+0.2*plane_dist[0]))) {
+	    x = coords[atom_id[count]][0];
+	    y = coords[atom_id[count]][1];
+	    z = coords[atom_id[count]][2];
+		if (((fabs(x-ref_coord_low[0]) < 0.2*plane_dist[0]) && (y >= ref_coord_low[1]-0.2*plane_dist[1]) && (y <= ref_coord_high[1]+0.2*plane_dist[1])) ||
+		    ((fabs(y-ref_coord_low[1]) < 0.2*plane_dist[1]) && (x >= ref_coord_low[0]-0.2*plane_dist[0]) && (x <= ref_coord_high[0]+0.2*plane_dist[0])) ||
+		    ((fabs(x-ref_coord_high[0]) < 0.2*plane_dist[0]) && (y >= ref_coord_low[1]-0.2*plane_dist[1]) && (y <= ref_coord_high[1]+0.2*plane_dist[1])) ||
+		    ((fabs(y-ref_coord_high[1]) < 0.2*plane_dist[1]) && (x >= ref_coord_low[0]-0.2*plane_dist[0]) && (x <= ref_coord_high[0]+0.2*plane_dist[0]))) {
 			type = 2;
+            aID[n_type2][0] = atom_id[count];
+            aID[n_type2][1] = x;
+            aID[n_type2][2] = y;
+            aID[n_type2][3] = z;
+            ++n_type2;
 		}
-		else if (coords[3*count] > ref_coord_low[0] && coords[3*count+1] > ref_coord_low[1] &&
-		    coords[3*count] < ref_coord_high[0] && coords[3*count+1] < ref_coord_high[1]) {
+		else if (x > ref_coord_low[0] && y > ref_coord_low[1] &&
+		    x < ref_coord_high[0] && y < ref_coord_high[1]) {
                         type = 0;
                 }
 		else {
 			type = 4;
-			number = atom_id[count];
-            cor_type4[number][0] = coords[3*count    ];
-            cor_type4[number][1] = coords[3*count + 1];
-            cor_type4[number][2] = coords[3*count + 2];
+            ind_type4[n_type4] = atom_id[count];
+            ++ n_type4;
 		}
-		myfile << atom_id[count] << "  " << type << "  " << masses[count] << "  " << coords[3*count] << "  " << coords[3*count+1] << "  " << coords[3*count+2] << endl;
+		myfile << atom_id[count] << "  " << type << "  " << masses[count] << "  " << x << "  " << y << "  " << z << endl;
 	}
 
 	inputfile.close();

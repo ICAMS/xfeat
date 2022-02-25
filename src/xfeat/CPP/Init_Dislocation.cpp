@@ -41,8 +41,7 @@ void atom_element() {
 
 	bool found;
 
-	ATOM_COUNT = 0;
-	n_type2 = 0;
+	n_type4 = 0;
 
 	std::string line;
 	char *token;
@@ -88,7 +87,7 @@ void atom_element() {
 				}
 			}
 
-			if (type == 2) {
+			/*if (type == 2) {
 				if (x < lxmin) {
 					lxmin = x;
 				}
@@ -110,7 +109,7 @@ void atom_element() {
 				++n_type2;
 				x = x + Lx * 0.5 - shift_x;
 				y = y + Ly * 0.5 - shift_y;
-			}
+			}*/
 			if (atom_counter == 0) {
 				refx = x;
 				refy = y;
@@ -137,7 +136,7 @@ void atom_element() {
 			x = x - Lx * 0.5 + shift_x;  // Current
 			y = y - Ly * 0.5 + shift_y;
 
-			if (type == 4) { //atoms outside the hollow box
+			if (type == 4) { //atoms in overlap region
 				found = false;
 				for (int i = 0; i < NEL; i++) {
 
@@ -184,15 +183,15 @@ void atom_element() {
 					if ((xat >= xmin) && (yat >= ymin) && (zat >= zmin)
 							&& (xat <= xmax) && (yat <= ymax)
 							&& (zat <= zmax)) {
-						a_ele_ID[ATOM_COUNT][0] = number;
-						a_ele_ID[ATOM_COUNT][1] = x;
-						a_ele_ID[ATOM_COUNT][2] = y;
-						a_ele_ID[ATOM_COUNT][3] = z;
-						interaction_atom_element[ATOM_COUNT][0] = i;  // number of element
-						interaction_atom_element[ATOM_COUNT][1] = number;  // atom number in IMD file
+						a_ele_ID[n_type4][0] = number;
+						a_ele_ID[n_type4][1] = x;
+						a_ele_ID[n_type4][2] = y;
+						a_ele_ID[n_type4][3] = z;
+						interaction_atom_element[n_type4][0] = i;  // number of element
+						interaction_atom_element[n_type4][1] = number;  // atom number in IMD file
 						//myfile << number << "    " << i << endl;
-						++ATOM_COUNT;
-						//cout << ATOM_COUNT << endl;
+						++n_type4;
+						//cout << n_type4 << endl;
 
 						found = true;
 						break;
@@ -219,7 +218,7 @@ void atom_element() {
 	cout << "(DIFFX,DIFFY,DIFFZ) IS (" << diffx << "," << diffy << "," << diffz << ")" << endl;
 	cout << "(LXMIN,LXMAX) IS (" << lxmin << "," << lxmax << ")" << endl;
 	cout << "(LYMIN,LYMAX) IS (" << lymin << "," << lymax << ")" << endl;
-	cout << "Number of type 4 atoms found in the mesh: " << ATOM_COUNT << endl;
+	cout << "Number of type 4 atoms found in the mesh: " << n_type4 << endl;
 
 }
 
@@ -259,7 +258,7 @@ void displacement_interpolation() {
 	check_count_up = 0;
 	check_count_low = 0;
 
-	for (int l = 0; l < ATOM_COUNT; l++) {
+	for (int l = 0; l < n_type4; l++) {
 		ele = interaction_atom_element[l][0];
 		atom = interaction_atom_element[l][1];
 
@@ -359,7 +358,7 @@ void displacement_interpolation() {
 
 		found = false;
 
-		for (int j = 0; j < ATOM_COUNT; j++) {
+		for (int j = 0; j < n_type4; j++) {
 			if (a_ele_ID[j][0] == atom) {
 				xat = a_ele_ID[j][1];
 				yat = a_ele_ID[j][2];
@@ -486,11 +485,13 @@ void displacement_interpolation() {
 	cout << "Number of times atom found: " << check_count << endl;
 }
 
-void init_atom_config() {
+void init_screw_dis() {
     /* Produce IMD input file with atomic shifts from FEM solution in boundary region
     applied to type 4 atoms. All other atom types are shifted according to Volterra 
     solution for screw dislocation.
     
+    reads: relaxed_perfect_crystal_with_atom_type.imd
+    writes: atomistic_dislocation_with_fem_solution.imd
     */
 	ifstream inputfile_atom;
 	inputfile_atom.open(temp_dir + "/relaxed_perfect_crystal_with_atom_type.imd");
@@ -612,8 +613,9 @@ void init_atom_config() {
 }
 
 void atom_configuration() {
-    /*  Apply nodal positons to type 4 atoms and write updated atomic
-        configuration. Other atom types remain untouched.
+    /*  Transfer strain from XFEM elements in overlap region to nodal positons of 
+    type 4 atoms and write updated atomic configuration. Other atom types remain
+    untouched.
         
         Reads atomistic configuration from file: 
             relaxed_atomistic_dislocation_structure.00000.ss
@@ -693,9 +695,9 @@ void atom_configuration() {
 
 			if (type == 4) {
 
-				z = cor_type4[number][2] + atom_disp[number][2];
-				y = cor_type4[number][1] + atom_disp[number][1];
-				x = cor_type4[number][0] + atom_disp[number][0];
+				z = coords[number][2] + atom_disp[number][2];
+				y = coords[number][1] + atom_disp[number][1];
+				x = coords[number][0] + atom_disp[number][0];
 
 				if (atom_disp[number][2] == 0.0) {
 					cout << number << " " << atom_disp[number][2] << "  " << x
@@ -719,7 +721,11 @@ void nodal_displacement() {
         Reads relaxed atomistic configuration from file: 
             relaxed_atomistic_dislocation_structure.00000.ss
         Atomic displacements are calculated relative to:
-            relaxed_perfect_crystal_with_atom_type.imd
+            relaxed_perfect_crystal_with_atom_type.imd stored in coords
+            
+    Attributes:
+    at_disp
+    ENFRDISPglob
     
     */
 
@@ -731,19 +737,9 @@ void nodal_displacement() {
 		exit(EXIT_FAILURE);
 	}
 
-	ifstream inputfile_atom;
-	inputfile_atom.open(temp_dir + "/relaxed_perfect_crystal_with_atom_type.imd");
-	/* THIS INFORMATION SHOULD BE STORED WHEN GENERATING THE FILE:
-	data_disp_un */
-	if (inputfile_atom == NULL) {
-		cout << "File 'relaxed_perfect_crystal_with_atom_type.imd' does not exist!" << endl;
-		exit(EXIT_FAILURE);
-	}
-
-	double vx, vy, vz, Epot, eam_rho;
 	int number, type;
 	double mass, x, y, z;
-	double fx, fy, fz;
+	double dz;
 
 	std::string line;
 	char *token;
@@ -780,77 +776,29 @@ void nodal_displacement() {
 				}
 			}
 
-			data_disp[number][0] = x;
-			data_disp[number][1] = y;
-			data_disp[number][2] = z;
+			at_disp[number][0] = x - coords[number][0];
+			at_disp[number][1] = y - coords[number][1];
+			dz = z - coords[number][2];
+			
+			if (fabs(dz) > (Lz * 0.5)) {
+                if (dz > 0.0)
+                    dz = dz - Lz;
+                else
+                    dz = dz + Lz;
+            }
+            at_disp[number][2] = dz;
 
 		} //looping over lines which don't have #
 
 	} //End of input while loop on atoms
-
-	std::string line_string;
-	char *token_string;
-
-	while (std::getline(inputfile_atom, line_string)) {
-
-		if (line_string[0] != '#') {
-
-			token_string = strtok(&line_string[0], " ");
-			number = atoi(token_string);
-
-			int ntokens = 1;
-
-			while ((token_string = strtok(NULL, " ")) != NULL) {
-
-				ntokens = ntokens + 1;
-
-				switch (ntokens) {
-				case 2:
-					type = atoi(token_string);
-					break;
-				case 3:
-					mass = strtod(token_string, NULL);
-					break;
-				case 4:
-					x = strtod(token_string, NULL);
-					break;
-				case 5:
-					y = strtod(token_string, NULL);
-					break;
-				case 6:
-					z = strtod(token_string, NULL);
-					break;
-				}
-			}
-
-			data_disp_un[number][0] = x;
-			data_disp_un[number][1] = y;
-			data_disp_un[number][2] = z;
-
-		} //looping over lines which don't have #
-
-	} //End of input while loop on atoms
-
-	double dx, dy, dz;
 
     int ind, inode;
 	for (int i = 0; i < NCONSNODE; i++) {
-	    ind = interaction_atom_node[i][1];
-		dz = data_disp[ind][2] - data_disp_un[ind][2];
-		dy = data_disp[ind][1] - data_disp_un[ind][1];
-		dx = data_disp[ind][0] - data_disp_un[ind][0];
-
-		if (fabs(dz) > (Lz * 0.5)) {
-			if (dz > 0.0)
-				dz = dz - Lz;
-			else
-				dz = dz + Lz;
-		}
-		
+	    ind = interaction_atom_node[i][1];		
 		inode = interaction_atom_node[i][0];
-		ENFRDISPglob[3*inode    ] = dx;
-		ENFRDISPglob[3*inode + 1] = dy;
-	    ENFRDISPglob[3*inode + 2] = dz;
+		ENFRDISPglob[3*inode    ] = at_disp[ind][0];
+		ENFRDISPglob[3*inode + 1] = at_disp[ind][1];
+	    ENFRDISPglob[3*inode + 2] = at_disp[ind][2];
 	}
 
 }
@@ -878,8 +826,8 @@ void atom_node() {
 			if (z1 > (Lz - 0.05*diffz)) //change this!!!!!!!!!
 				z1 = z1 - Lz;
 
-			x2 = aID[j][1];
-			y2 = aID[j][2];
+			x2 = aID[j][1] - 0.5*Lx;
+			y2 = aID[j][2] - 0.5*Ly;
 			z2 = aID[j][3];
 
 			dis = pow(
@@ -898,34 +846,9 @@ void atom_node() {
 
 		if (min_tol >= 1.0) {
 			cout << "Error in finding atom node pair! " << min << endl;
+			cout << "Node: " << i << "Type 2 atoms: " << n_type2 << endl;
 			exit(EXIT_FAILURE);
 		}
 
 	} // end of i
 }
-
-void create_volterra_dis() {
-    /* create BC for Volterra dislocation on constraint nodes
-    
-    Parameters:
-
-    */
-    int i, inode;
-    double yc;
-    
-    // outer boundary
-    for (i = 0; i < NENFD; i++) {
-		inode = ncstr_o[i];
-		ENFRDISPglob[3*inode    ] = 0.0;
-		ENFRDISPglob[3*inode + 1] = 0.0;
-		ENFRDISPglob[3*inode + 2] = bv * atan2(Yglob[inode-1], Xglob[inode-1])/(2.0*PI);
-	}	
-	//inner boundary
-	for (i = 0; i < NCONSNODE; i++) {
-	    inode = ncstr_i[i];
-		ENFRDISPglob[3*inode    ] = 0.0;
-		ENFRDISPglob[3*inode + 1] = 0.0;
-	    ENFRDISPglob[3*inode + 2] = bv * atan2(Yglob[inode-1], Xglob[inode-1])/(2.0*PI);
-	}
-}
-
