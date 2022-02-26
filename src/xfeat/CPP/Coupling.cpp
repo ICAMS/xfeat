@@ -1,3 +1,53 @@
+void atom_node() {
+    /* Assign atoms of type 2 to nodes on inner boundary nodes
+    
+    Attributes
+    ----------
+    interaction_atom_node
+    */
+
+	double min, min_tol, dis;
+	double x1, x2, z1, y1, y2, z2;
+
+	for (int i = 0; i < NCONSNODE; i++) {
+		min_tol = 1.0;
+
+		x1 = nID[i][1];
+		y1 = nID[i][2];
+		z1 = nID[i][3];
+
+		for (int j = 0; j < n_type2; j++) {
+
+			if (z1 > (0.95*Lz))
+				z1 = z1 - Lz;
+
+			x2 = aID[j][1] - 0.5*Lx + shift[0];
+			y2 = aID[j][2] - 0.5*Ly + shift[1];
+			z2 = aID[j][3];
+
+			dis = pow(
+					pow((x1 - x2), 2.0) + pow((y1 - y2), 2.0)
+							+ pow((z1 - z2), 2.0), 0.5);
+
+			min = dis;
+
+			if (min < min_tol) {
+				min_tol = min;
+				interaction_atom_node[i][0] = nID[i][0];
+				interaction_atom_node[i][1] = aID[j][0];
+			}
+
+		} // end of j
+
+		if (min_tol >= 1.0) {
+			cout << "Error in finding atom node pair! " << min << endl;
+			cout << "Node: " << i << "Type 2 atoms: " << n_type2 << endl;
+			exit(EXIT_FAILURE);
+		}
+
+	} // end of i
+}
+
 void atom_element() {
     /* reads atomic structure and assigns type 4 atoms in overlapping FEM region to
     elements, and type 2 atoms to nodes. Type 4 atoms are always moved with the FE
@@ -47,13 +97,13 @@ void atom_element() {
 	char *token;
 
 	atom_counter = 0;
-	diffx = Lx;
-	diffy = Ly;
-	diffz = Lz;
-	lxmin = Lx;
-	lxmax = 0.0;
-	lymin = Ly;
-	lymax = 0.0;
+	double diffx = Lx;
+	double diffy = Ly;
+	double diffz = Lz;
+	double lxmin = Lx;
+	double lxmax = 0.0;
+	double lymin = Ly;
+	double lymax = 0.0;
     
 	while (std::getline(inputfile_atom, line)) {
 
@@ -87,29 +137,6 @@ void atom_element() {
 				}
 			}
 
-			/*if (type == 2) {
-				if (x < lxmin) {
-					lxmin = x;
-				}
-				if (y < lymin) {
-					lymin = y;
-				}
-				if (x > lxmax) {
-					lxmax = x;
-				}
-				if (y > lymax) {
-					lymax = y;
-				}
-				x = x - Lx * 0.5 + shift_x;
-				y = y - Ly * 0.5 + shift_y;
-				aID[n_type2][0] = number;
-				aID[n_type2][1] = x;
-				aID[n_type2][2] = y;
-				aID[n_type2][3] = z;
-				++n_type2;
-				x = x + Lx * 0.5 - shift_x;
-				y = y + Ly * 0.5 - shift_y;
-			}*/
 			if (atom_counter == 0) {
 				refx = x;
 				refy = y;
@@ -133,8 +160,8 @@ void atom_element() {
 			}
 			atom_counter++;
 
-			x = x - Lx * 0.5 + shift_x;  // Current
-			y = y - Ly * 0.5 + shift_y;
+			x = x - Lx * 0.5 + shift[0];  // Current
+			y = y - Ly * 0.5 + shift[1];
 
 			if (type == 4) { //atoms in overlap region
 				found = false;
@@ -202,8 +229,8 @@ void atom_element() {
 				if (found == false) {
 					cout << "Atom number: " << number << endl;
 					cout << xat << " " << yat << "  " << endl;
-					x = x + Lx * 0.5 - shift_x;  // Current
-					y = y + Ly * 0.5 - shift_y;
+					x = x + Lx * 0.5 - shift[0];  // Current
+					y = y + Ly * 0.5 - shift[1];
 					cout << x << " " << y << "  " << z << "  " << endl;
 					cout << "Error in finding points inside an element!"
 							<< endl;
@@ -231,7 +258,7 @@ void displacement_interpolation() {
     
     Attributes
     ----------
-    atom_disp
+    type4_disp
     */
 
 	double SHI, NEW, PHI;
@@ -425,9 +452,9 @@ void displacement_interpolation() {
 			daz = daz + SF[i] * DP[3 * i];
 		}
 
-		atom_disp[atom][0] = dax;
-		atom_disp[atom][1] = day;
-		atom_disp[atom][2] = daz;
+		type4_disp[atom][0] = dax;
+		type4_disp[atom][1] = day;
+		type4_disp[atom][2] = daz;
 		
 		if ((xat == 0) && (yat == 0)) {
 			xat = 0.25;
@@ -472,10 +499,10 @@ void displacement_interpolation() {
 
 			if (condition1 && condition2) {
 				if (yat >= 0) {
-					atom_disp[atom][2] = w;		//DISP[LOTOGO[ele][n[3]]][1];
+					type4_disp[atom][2] = w;		//DISP[LOTOGO[ele][n[3]]][1];
 
 				} else {
-					atom_disp[atom][2] = -w;		//DISP[LOTOGO[ele][n[1]]][1];
+					type4_disp[atom][2] = -w;		//DISP[LOTOGO[ele][n[1]]][1];
 				}
 			}
 		} // end of loop on xfem elements
@@ -483,133 +510,6 @@ void displacement_interpolation() {
 	} // end of for loop on 'l' atoms
 
 	cout << "Number of times atom found: " << check_count << endl;
-}
-
-void init_screw_dis() {
-    /* Produce IMD input file with atomic shifts from FEM solution in boundary region
-    applied to type 4 atoms. All other atom types are shifted according to Volterra 
-    solution for screw dislocation.
-    
-    reads: relaxed_perfect_crystal_with_atom_type.imd
-    writes: atomistic_dislocation_with_fem_solution.imd
-    */
-	ifstream inputfile_atom;
-	inputfile_atom.open(temp_dir + "/relaxed_perfect_crystal_with_atom_type.imd");
-
-	if (inputfile_atom == NULL) {
-		cout << "File 'relaxed_perfect_crystal_with_atom_type.imd' does not exist!" << endl;
-		exit(EXIT_FAILURE);
-	}
-
-	ofstream myfile;
-	myfile.open(temp_dir + "/atomistic_dislocation_with_fem_solution.imd");
-
-	double vx, vy, vz, Epot, eam_rho;
-	int number, type;
-	double mass, x, y, z;
-	double fx, fy, fz;
-
-	double arctan;
-	double w;
-
-	int type_atom;
-
-	type_atom = 0;
-
-	std::string line;
-	char *token;
-
-	while (std::getline(inputfile_atom, line)) {
-
-		if (line[0] == '#' && line[1] == 'F')
-			myfile << "#F A 1 1 1 3 0 0" << endl;
-
-		if (line[0] == '#' && line[1] == 'C')
-			myfile << "#C number type mass x y z" << endl;
-
-		if (line[0] == '#' && line[1] == 'X')
-			myfile << line << endl;
-
-		if (line[0] == '#' && line[1] == 'Y')
-			myfile << line << endl;
-
-		if (line[0] == '#' && line[1] == 'Z')
-			myfile << line << endl;
-
-		if (line[0] == '#' && line[1] == 'E')
-			myfile << line << endl;
-
-		if (line[0] != '#') {
-
-			token = strtok(&line[0], " ");
-			number = atoi(token);
-
-			int ntokens = 1;
-
-			while ((token = strtok(NULL, " ")) != NULL) {
-
-				ntokens = ntokens + 1;
-
-				switch (ntokens) {
-				case 2:
-					type = atoi(token);
-					break;
-				case 3:
-					mass = strtod(token, NULL);
-					break;
-				case 4:
-					x = strtod(token, NULL);
-					break;
-				case 5:
-					y = strtod(token, NULL);
-					break;
-				case 6:
-					z = strtod(token, NULL);
-					break;
-				}
-
-			}
-
-			x = x - Lx * 0.5 + shift_x;  // Current
-			y = y - Ly * 0.5 + shift_y;
-
-			if (type == 4) {
-
-				z += atom_disp[number][2];
-				y += atom_disp[number][1];
-				x += atom_disp[number][0];
-
-				if (atom_disp[number][2] == 0.0) {
-					cout << "Error in atom displacement calculations!" << endl;
-					exit(EXIT_FAILURE);
-				}
-
-			} else {
-
-				if ((x == 0) && (y == 0)) {
-					x = 0.25;
-					arctan = atan2(double(y), double(x));
-				} else
-					arctan = atan2(double(y), double(x));
-
-				w = (bv / (2.0 * PI)) * arctan;
-
-				z += w;
-
-			}
-
-			x = x + Lx * 0.5 - shift_x;  // Current
-			y = y + Ly * 0.5 - shift_y;
-
-			myfile << number << "  " << type << "  " << mass << "  " << x
-					<< "  " << y << "  " << z << endl;
-
-		} //looping over lines which don't have #
-
-	} // End of input while loop on atoms
-
-	//cout << "Total type 2 atoms inside the system box : " << type_atom << endl;
-
 }
 
 void atom_configuration() {
@@ -695,12 +595,12 @@ void atom_configuration() {
 
 			if (type == 4) {
 
-				z = coords[number][2] + atom_disp[number][2];
-				y = coords[number][1] + atom_disp[number][1];
-				x = coords[number][0] + atom_disp[number][0];
+				z = coords[number][2] + type4_disp[number][2];
+				y = coords[number][1] + type4_disp[number][1];
+				x = coords[number][0] + type4_disp[number][0];
 
-				if (atom_disp[number][2] == 0.0) {
-					cout << number << " " << atom_disp[number][2] << "  " << x
+				if (type4_disp[number][2] == 0.0) {
+					cout << number << " " << type4_disp[number][2] << "  " << x
 							<< "  " << y << "  " << z << endl;
 					cout << "Error in atom displacement calculations!" << endl;
 					exit(EXIT_FAILURE);
@@ -801,54 +701,4 @@ void nodal_displacement() {
 	    ENFRDISPglob[3*inode + 2] = at_disp[ind][2];
 	}
 
-}
-
-void atom_node() {
-    /* Assign atoms of type 2 to nodes on inner boundary nodes
-    
-    Attributes
-    ----------
-    interaction_atom_node
-    */
-
-	double min, min_tol, dis;
-	double x1, x2, z1, y1, y2, z2;
-
-	for (int i = 0; i < NCONSNODE; i++) {
-		min_tol = 1.0;
-
-		x1 = nID[i][1];
-		y1 = nID[i][2];
-		z1 = nID[i][3];
-
-		for (int j = 0; j < n_type2; j++) {
-
-			if (z1 > (Lz - 0.05*diffz)) //change this!!!!!!!!!
-				z1 = z1 - Lz;
-
-			x2 = aID[j][1] - 0.5*Lx;
-			y2 = aID[j][2] - 0.5*Ly;
-			z2 = aID[j][3];
-
-			dis = pow(
-					pow((x1 - x2), 2.0) + pow((y1 - y2), 2.0)
-							+ pow((z1 - z2), 2.0), 0.5);
-
-			min = dis;
-
-			if (min < min_tol) {
-				min_tol = min;
-				interaction_atom_node[i][0] = nID[i][0];
-				interaction_atom_node[i][1] = aID[j][0];
-			}
-
-		} // end of j
-
-		if (min_tol >= 1.0) {
-			cout << "Error in finding atom node pair! " << min << endl;
-			cout << "Node: " << i << "Type 2 atoms: " << n_type2 << endl;
-			exit(EXIT_FAILURE);
-		}
-
-	} // end of i
 }

@@ -26,6 +26,8 @@ cdef extern from "cpp_wrapper.h":
     # atomistic quantities
     double bv  # magnitude of Burgers vector, defined in atom_set_up
     double shift[2]  # shift between atmomistic coords and nodal positions
+    double coords[20000][3]  # atomic positions in reference configuration
+    double at_disp[20000][3]  # atomic displacements
     
     # XFEM quantities
     int NNODE  # number of nodes, defined in create_mesh
@@ -38,7 +40,6 @@ cdef extern from "cpp_wrapper.h":
     int nelem_full_big_box_z
     double Lx, Ly, Lz  # lengths of axes of atomic box
     double sigma[3]  # three components of stress tensor in element, calulated in STRESS
-    double at_disp[20000][3]  # atomic displacements
     vector[int] Iglob  # indices of compressed stiffness matrix
     vector[int] Jglob  # columnes of compressed stiffness matrix
     vector[int] JJglob  # number of equation in global system per node (negative of no DOF for node)
@@ -59,8 +60,8 @@ cdef extern from "cpp_wrapper.h":
     void atom_element()  # assign type 4 atoms to elements in overlap region
     void displacement_interpolation()  # interpolate displacements in elements in overlap region
     void atom_configuration()  # transfer strains from XFEM solution to type 4 atoms
-    void init_screw_dis()  # create a screw dislocation in atomic core
+    void create_atom_dis()  # create a screw dislocation in atomic core
     void nodal_displacement()  # calculate displacements on inner boundary nodes from type 2 atoms
-    void create_volterra_dis()  # create displacements for Volterra dislocation in XFEM part
+    void create_xfem_dis()  # create displacements for Volterra dislocation in XFEM part
     void apply_e23_outer(double e23)  # apply shear strain on outer XFEM boundary
     void STRESS(double XLOC[9], double YLOC[9], double ZLOC[9], int IEL)  # evaluate element stress

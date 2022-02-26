@@ -38,7 +38,7 @@ mod.init_dislo()
 #mod.plot_nodal('ubc')
 
 # iterate into relaxed configuration
-for i in range(1):
+for i in range(5):
     # relax atomic region under shear strain
     mod.relax_atoms(i)  # relax atomic structure with fixed boundary atoms
     mod.atom_bc()  # apply relaxed atom positions as BC to XFEM 
@@ -58,7 +58,7 @@ mod.plot_el('sig', sig=sig0)
 # Apply sub-critical shear stress on boundary
 mod.apply_bc(1.55)
 # iterate into relaxed configuration
-for i in range(1):
+for i in range(10):
     mod.relax_atoms(i, name='applied_stress_155')
     mod.atom_bc()
     mod.solve()
@@ -71,7 +71,7 @@ mod.plot_el('sig', sig=sig1)
 # Apply critical shear stress on boundary
 mod.apply_bc(1.65)
 # iterate into relaxed configuration
-for i in range(1):
+for i in range(10):
     mod.relax_atoms(i, name='applied_stress_165')
     mod.atom_bc()
     mod.solve()

@@ -9,12 +9,19 @@ int EqNum(int * JJglob, int Njoint) {
 	return Ndf;
 }
 
-void JacInv() {
-
-	// FORMATION OF THE JACOBIAN INVERSION MATRIX
+double JacInv() {
+    /* FORMATION OF THE JACOBIAN INVERSION MATRIX
+    
+    Returns:
+    Det : double
+    
+    Attributes:
+    AjacInv
+    */
 
 	int i, j;
 	double C[4][4];
+	double Det = 0.0;
 
 	C[1][1] = Ajac[2][2] * Ajac[3][3] - Ajac[2][3] * Ajac[3][2];
 	C[1][2] = -(Ajac[2][1] * Ajac[3][3] - Ajac[2][3] * Ajac[3][1]);
@@ -26,8 +33,6 @@ void JacInv() {
 	C[3][2] = -(Ajac[1][1] * Ajac[2][3] - Ajac[1][3] * Ajac[2][1]);
 	C[3][3] = Ajac[1][1] * Ajac[2][2] - Ajac[1][2] * Ajac[2][1];
 
-	Det = 0.0;
-
 	for (i = 1; i < 4; i++) {
 		Det = Det + Ajac[1][i] * C[1][i];
 	}
@@ -37,6 +42,8 @@ void JacInv() {
 			AjacInv[i][j] = C[j][i] / Det;
 		}
 	}
+	
+	return Det;
 }
 
 void Assem_force(int Iel) {
@@ -77,7 +84,7 @@ void ENFORCEDFORCE(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN],
 
 	double BBTRANE[NDLOC][NDS], AB[NDS][10];
 
-	double SHI, NEW, KSHI;
+	double SHI, NEW, KSHI, Det;
 	double DIR1[NODEN], DIR2[NODEN], DIR3[NODEN], COR[NODEN][ND];
 
 	DIR1[1] = DIR2[4] = DIR3[3] = -1.0;
@@ -154,7 +161,7 @@ void ENFORCEDFORCE(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN],
 						for (int k = 1; k < NODEN; k++)
 							Ajac[i][j] = Ajac[i][j] + SND[i][k] * COR[k][j];
 
-				JacInv();
+				Det = JacInv();
 
 				for (int i = 0; i < 10; i++)
 					for (int j = 0; j < 10; j++)
@@ -252,7 +259,7 @@ void DISLOCATIONFORCE(double XLOC[NODEN], double YLOC[NODEN],
 
 	double BBTRANE[NDLOC][NDS], AB[NDS][10];
 
-	double SHI, NEW, KSHI;
+	double SHI, NEW, KSHI, Det;
 	double DIR1[NODEN], DIR2[NODEN], DIR3[NODEN], COR[NODEN][ND];
 
 	DIR1[1] = DIR2[4] = DIR3[3] = -1.0;
@@ -329,7 +336,7 @@ void DISLOCATIONFORCE(double XLOC[NODEN], double YLOC[NODEN],
 						for (int k = 1; k < NODEN; k++)
 							Ajac[i][j] = Ajac[i][j] + SND[i][k] * COR[k][j];
 
-				JacInv();
+				Det = JacInv();
 
 				double GND[ND], H;
 
@@ -516,7 +523,7 @@ void STIFF(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN]) {
 
 	double BBTRANE[NDLOC][NDS], AB[NDS][10];
 
-	double SHI, NEW, KSHI;
+	double SHI, NEW, KSHI, Det;
 	double DIR1[NODEN], DIR2[NODEN], DIR3[NODEN], COR[NODEN][ND];
 
 	DIR1[1] = DIR2[4] = DIR3[3] = -1.0;
@@ -594,7 +601,7 @@ void STIFF(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN]) {
 						for (int k = 1; k < NODEN; k++)
 							Ajac[i][j] = Ajac[i][j] + SND[i][k] * COR[k][j];
 
-				JacInv();
+				Det = JacInv();
 
 				for (int i = 0; i < 10; i++)
 					for (int j = 0; j < 10; j++)
@@ -675,7 +682,7 @@ void STRESS(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN],
 
 	double BBTRANE[NDLOC][NDS], AB[NDS][10];
 
-	double SHI, NEW, KSHI;
+	double SHI, NEW, KSHI, Det;
 	double DIR1[NODEN], DIR2[NODEN], DIR3[NODEN], COR[NODEN][ND];
 	double AvgStr1, AvgStr2, AvgStr3;
 	
@@ -762,7 +769,7 @@ void STRESS(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN],
 						for (int k = 1; k < NODEN; k++)
 							Ajac[i][j] = Ajac[i][j] + SND[i][k] * COR[k][j];
 
-				JacInv();
+				Det = JacInv();
 
 				for (int i = 0; i < 10; i++)
 					for (int j = 0; j < 10; j++)
@@ -1232,7 +1239,7 @@ void update_fglob() {
 	}
 }
 
-void create_volterra_dis() {
+void create_xfem_dis() {
     /* create BC for Volterra dislocation on constraint nodes
     
     Parameters:

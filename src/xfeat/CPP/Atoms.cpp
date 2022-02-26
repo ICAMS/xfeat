@@ -345,3 +345,130 @@ extern void atom_set_up(){
 	cout << "dist is (" << dist[0] << "," << dist[1] << "," << dist[2] << ") ; plane_dist is (" << plane_dist[0] << "," << plane_dist[1] << "," << plane_dist[2] << ")" << endl;
 	
 }
+
+void create_atom_dis() {
+    /* Produce IMD input file with atomic shifts from FEM solution in boundary region
+    applied to type 4 atoms. All other atom types are shifted according to Volterra 
+    solution for screw dislocation.
+    
+    reads: relaxed_perfect_crystal_with_atom_type.imd
+    writes: atomistic_dislocation_with_fem_solution.imd
+    */
+	ifstream inputfile_atom;
+	inputfile_atom.open(temp_dir + "/relaxed_perfect_crystal_with_atom_type.imd");
+
+	if (inputfile_atom == NULL) {
+		cout << "File 'relaxed_perfect_crystal_with_atom_type.imd' does not exist!" << endl;
+		exit(EXIT_FAILURE);
+	}
+
+	ofstream myfile;
+	myfile.open(temp_dir + "/atomistic_dislocation_with_fem_solution.imd");
+
+	double vx, vy, vz, Epot, eam_rho;
+	int number, type;
+	double mass, x, y, z;
+	double fx, fy, fz;
+
+	double arctan;
+	double w;
+
+	int type_atom;
+
+	type_atom = 0;
+
+	std::string line;
+	char *token;
+
+	while (std::getline(inputfile_atom, line)) {
+
+		if (line[0] == '#' && line[1] == 'F')
+			myfile << "#F A 1 1 1 3 0 0" << endl;
+
+		if (line[0] == '#' && line[1] == 'C')
+			myfile << "#C number type mass x y z" << endl;
+
+		if (line[0] == '#' && line[1] == 'X')
+			myfile << line << endl;
+
+		if (line[0] == '#' && line[1] == 'Y')
+			myfile << line << endl;
+
+		if (line[0] == '#' && line[1] == 'Z')
+			myfile << line << endl;
+
+		if (line[0] == '#' && line[1] == 'E')
+			myfile << line << endl;
+
+		if (line[0] != '#') {
+
+			token = strtok(&line[0], " ");
+			number = atoi(token);
+
+			int ntokens = 1;
+
+			while ((token = strtok(NULL, " ")) != NULL) {
+
+				ntokens = ntokens + 1;
+
+				switch (ntokens) {
+				case 2:
+					type = atoi(token);
+					break;
+				case 3:
+					mass = strtod(token, NULL);
+					break;
+				case 4:
+					x = strtod(token, NULL);
+					break;
+				case 5:
+					y = strtod(token, NULL);
+					break;
+				case 6:
+					z = strtod(token, NULL);
+					break;
+				}
+
+			}
+
+			x = x - Lx * 0.5 + shift[0];  // Current
+			y = y - Ly * 0.5 + shift[1];
+
+			if (type == 4) {
+
+				z += type4_disp[number][2];
+				y += type4_disp[number][1];
+				x += type4_disp[number][0];
+
+				if (type4_disp[number][2] == 0.0) {
+					cout << "Error in atom displacement calculations!" << endl;
+					exit(EXIT_FAILURE);
+				}
+
+			} else {
+
+				if ((x == 0) && (y == 0)) {
+					x = 0.25;
+					arctan = atan2(double(y), double(x));
+				} else
+					arctan = atan2(double(y), double(x));
+
+				w = (bv / (2.0 * PI)) * arctan;
+
+				z += w;
+
+			}
+
+			x = x + Lx * 0.5 - shift[0];  // Current
+			y = y + Ly * 0.5 - shift[1];
+
+			myfile << number << "  " << type << "  " << mass << "  " << x
+					<< "  " << y << "  " << z << endl;
+
+		} //looping over lines which don't have #
+
+	} // End of input while loop on atoms
+
+	//cout << "Total type 2 atoms inside the system box : " << type_atom << endl;
+
+}

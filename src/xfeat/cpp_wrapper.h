@@ -21,6 +21,8 @@ double EE3D[NDS][NDS];
 // atomistic quantities
 double bv;
 double shift[2];
+double coords[ATOMTOTAL][3];
+double at_disp[ATOMTOTAL][3];
 
 // XFEM quantities
 int NNODE, NLAG, NEL, NDF, xdof;
@@ -29,7 +31,6 @@ int nelem_full_big_box_y;
 int nelem_full_big_box_z;
 double Lx, Ly, Lz;
 double sigma[3];
-double at_disp[ATOMTOTAL][3];
 std::vector<int> Iglob;
 std::vector<int> Jglob;
 std::vector<int> JJglob;
@@ -52,9 +53,9 @@ void atom_node();
 void atom_element();
 void displacement_interpolation();
 void atom_configuration();
-void init_screw_dis();
+void create_atom_dis();
 void nodal_displacement();
-void create_volterra_dis();
+void create_xfem_dis();
 void apply_e23_outer(double e23);
 void STRESS(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN], int IEL);
 
@@ -73,17 +74,11 @@ int interaction_atom_node[ATOMTOTAL][2];
 int atom_id[ATOMTOTAL];
 int ind_type4[ATOMTOTAL];  // store numbers of type 4 atoms
 
-
-double Det;
-double shift_x, shift_y;
-double diffx, diffy, diffz; // space between planes in each dimension (diffz is approx. the Burgers vector?)
-double lxmin, lxmax, lymin, lymax; // limit coordinate values for type 2 atoms
 double minwidth_x = 11.0;
 double minwidth_y = 11.0;
 double eps = 1.e-7;
 double dist[3];
-double atom_disp[ATOMTOTAL][3];
-double coords[ATOMTOTAL][3];
+double type4_disp[ATOMTOTAL][3];
 double masses[ATOMTOTAL];
 double nID[NELEIN][4];
 double aID[ATOMTOTAL][4];
@@ -111,9 +106,9 @@ std::vector<std::map<int, double> > MAT;
 
 // other functions
 int EqNum(int * JJglob, int Njoint);
+double JacInv();
 void STIFF(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN]);
 void Assem(int Iel);
-void JacInv();
 void skylineTOcompressedarray();
 
 #endif  /*  HEADER_XFEAT_  */

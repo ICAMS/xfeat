@@ -274,14 +274,14 @@ class Model(object):
         '''
         # create Volterra screw dislocation by introducing a shift in
         # XFEM elements and atomic core
-        xfc.create_volterra_dis()  # create displacements in XFEM region
+        xfc.create_xfem_dis()  # create displacements in XFEM region
         self.ubc = np.array(xfc.ENFRDISPglob[3:], dtype=np.double)
         self.solve()  # calculate nodal displacements under BC of shift
         xfc.atom_element()  # assign type 4 atoms to elements
         xfc.atom_node()  # assign type 2 atoms to nodes
         xfc.displacement_interpolation()  # calculate strain on type 4 atoms
         # create IMD input file with updates positions of type 4 atoms
-        xfc.init_screw_dis()  # create dislocation in atomic core
+        xfc.create_atom_dis()  # create dislocation in atomic core
         
     def atom_bc(self):
         '''
