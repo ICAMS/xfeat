@@ -19,6 +19,7 @@ double fem_size;
 double EE3D[NDS][NDS];
 
 // atomistic quantities
+int natom = 0;
 double bv;
 double shift[2];
 double coords[ATOMTOTAL][3];
@@ -67,7 +68,6 @@ int NCONSNODE; // number of nodes on the inner surface
 int num_space_x = 0;
 int num_space_y = 0;
 int ctrmat = 0;
-int natom = 0;
 int fem_elems_round[2];
 int interaction_atom_element[ATOMTOTAL][2];
 int interaction_atom_node[ATOMTOTAL][2];

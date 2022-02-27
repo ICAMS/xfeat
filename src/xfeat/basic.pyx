@@ -8,6 +8,7 @@ Created on Sat Feb  5 17:26:13 2022
 @author: alexander
 """
 import numpy as np
+import pyvista as pv
 
 def rot_elast_tens(double C11, double C12, double C44, x):
     """
@@ -101,3 +102,167 @@ def rot_elast_tens(double C11, double C12, double C44, x):
         for j in range(0, i):
             EE[i, j] = EE[j, i]
     return EE
+
+def pv_mesh(nodes, elmts):
+    faces = set()
+    lines = set()
+    for vox in elmts:
+        vert = nodes[vox]
+        x0 = np.amin(vert[:, 0])
+        x1 = np.amax(vert[:, 0])
+        y0 = np.amin(vert[:, 1])
+        y1 = np.amax(vert[:, 1])
+        z0 = np.amin(vert[:, 2])
+        z1 = np.amax(vert[:, 2])
+        ind = np.nonzero(np.abs(vert[:, 0] - x0) < 1.e-4)[0]
+        assert(len(ind) == 4)
+        key = '{0}_{1}_{2}_{3}'.format(*[x for x in sorted(vox[ind])])
+        faces.add(key)
+        #find 4 lines
+        il = np.nonzero(np.abs(vert[ind, 1] - y0) < 1.e-4)[0]
+        assert(len(il) == 2)
+        key = '{0}_{1}'.format(*[x for x in sorted(vox[ind[il]])])
+        lines.add(key)
+        il = np.nonzero(np.abs(vert[ind, 1] - y1) < 1.e-4)[0]
+        assert(len(il) == 2)
+        key = '{0}_{1}'.format(*[x for x in sorted(vox[ind[il]])])
+        lines.add(key)
+        il = np.nonzero(np.abs(vert[ind, 2] - z0) < 1.e-4)[0]
+        assert(len(il) == 2)
+        key = '{0}_{1}'.format(*[x for x in sorted(vox[ind[il]])])
+        lines.add(key)
+        il = np.nonzero(np.abs(vert[ind, 2] - z1) < 1.e-4)[0]
+        assert(len(il) == 2)
+        key = '{0}_{1}'.format(*[x for x in sorted(vox[ind[il]])])
+        lines.add(key)
+        
+        # find face
+        ind = np.nonzero(np.abs(vert[:, 0] - x1) < 1.e-4)[0]
+        assert(len(ind) == 4)
+        key = '{0}_{1}_{2}_{3}'.format(*[x for x in sorted(vox[ind])])
+        faces.add(key)
+        #find lines
+        il = np.nonzero(np.abs(vert[ind, 1] - y0) < 1.e-4)[0]
+        assert(len(il) == 2)
+        key = '{0}_{1}'.format(*[x for x in sorted(vox[ind[il]])])
+        lines.add(key)
+        il = np.nonzero(np.abs(vert[ind, 1] - y1) < 1.e-4)[0]
+        assert(len(il) == 2)
+        key = '{0}_{1}'.format(*[x for x in sorted(vox[ind[il]])])
+        lines.add(key)
+        il = np.nonzero(np.abs(vert[ind, 2] - z0) < 1.e-4)[0]
+        assert(len(il) == 2)
+        key = '{0}_{1}'.format(*[x for x in sorted(vox[ind[il]])])
+        lines.add(key)
+        il = np.nonzero(np.abs(vert[ind, 2] - z1) < 1.e-4)[0]
+        assert(len(il) == 2)
+        key = '{0}_{1}'.format(*[x for x in sorted(vox[ind[il]])])
+        lines.add(key)
+        
+        ind = np.nonzero(np.abs(vert[:, 1] - y0) < 1.e-4)[0]
+        assert(len(ind) == 4)
+        key = '{0}_{1}_{2}_{3}'.format(*[x for x in sorted(vox[ind])])
+        faces.add(key)
+        #find lines
+        il = np.nonzero(np.abs(vert[ind, 0] - x0) < 1.e-4)[0]
+        assert(len(il) == 2)
+        key = '{0}_{1}'.format(*[x for x in sorted(vox[ind[il]])])
+        lines.add(key)
+        il = np.nonzero(np.abs(vert[ind, 0] - x1) < 1.e-4)[0]
+        assert(len(il) == 2)
+        key = '{0}_{1}'.format(*[x for x in sorted(vox[ind[il]])])
+        lines.add(key)
+        il = np.nonzero(np.abs(vert[ind, 2] - z0) < 1.e-4)[0]
+        assert(len(il) == 2)
+        key = '{0}_{1}'.format(*[x for x in sorted(vox[ind[il]])])
+        lines.add(key)
+        il = np.nonzero(np.abs(vert[ind, 2] - z1) < 1.e-4)[0]
+        assert(len(il) == 2)
+        key = '{0}_{1}'.format(*[x for x in sorted(vox[ind[il]])])
+        lines.add(key)
+        
+        ind = np.nonzero(np.abs(vert[:, 1] - y1) < 1.e-4)[0]
+        assert(len(ind) == 4)
+        key = '{0}_{1}_{2}_{3}'.format(*[x for x in sorted(vox[ind])])
+        faces.add(key)
+        #find lines
+        il = np.nonzero(np.abs(vert[ind, 0] - x0) < 1.e-4)[0]
+        assert(len(il) == 2)
+        key = '{0}_{1}'.format(*[x for x in sorted(vox[ind[il]])])
+        lines.add(key)
+        il = np.nonzero(np.abs(vert[ind, 0] - x1) < 1.e-4)[0]
+        assert(len(il) == 2)
+        key = '{0}_{1}'.format(*[x for x in sorted(vox[ind[il]])])
+        lines.add(key)
+        il = np.nonzero(np.abs(vert[ind, 2] - z0) < 1.e-4)[0]
+        assert(len(il) == 2)
+        key = '{0}_{1}'.format(*[x for x in sorted(vox[ind[il]])])
+        lines.add(key)
+        il = np.nonzero(np.abs(vert[ind, 2] - z1) < 1.e-4)[0]
+        assert(len(il) == 2)
+        key = '{0}_{1}'.format(*[x for x in sorted(vox[ind[il]])])
+        lines.add(key)
+        
+        ind = np.nonzero(np.abs(vert[:, 2] - z0) < 1.e-4)[0]
+        assert(len(ind) == 4)
+        key = '{0}_{1}_{2}_{3}'.format(*[x for x in sorted(vox[ind])])
+        faces.add(key)
+        #find lines
+        il = np.nonzero(np.abs(vert[ind, 1] - y0) < 1.e-4)[0]
+        assert(len(il) == 2)
+        key = '{0}_{1}'.format(*[x for x in sorted(vox[ind[il]])])
+        lines.add(key)
+        il = np.nonzero(np.abs(vert[ind, 1] - y1) < 1.e-4)[0]
+        assert(len(il) == 2)
+        key = '{0}_{1}'.format(*[x for x in sorted(vox[ind[il]])])
+        lines.add(key)
+        il = np.nonzero(np.abs(vert[ind, 0] - x0) < 1.e-4)[0]
+        assert(len(il) == 2)
+        key = '{0}_{1}'.format(*[x for x in sorted(vox[ind[il]])])
+        lines.add(key)
+        il = np.nonzero(np.abs(vert[ind, 0] - x1) < 1.e-4)[0]
+        assert(len(il) == 2)
+        key = '{0}_{1}'.format(*[x for x in sorted(vox[ind[il]])])
+        lines.add(key)
+        
+        ind = np.nonzero(np.abs(vert[:, 2] - z1) < 1.e-4)[0]
+        assert(len(ind) == 4)
+        key = '{0}_{1}_{2}_{3}'.format(*[x for x in sorted(vox[ind])])
+        faces.add(key)
+        #find lines
+        il = np.nonzero(np.abs(vert[ind, 1] - y0) < 1.e-4)[0]
+        assert(len(il) == 2)
+        key = '{0}_{1}'.format(*[x for x in sorted(vox[ind[il]])])
+        lines.add(key)
+        il = np.nonzero(np.abs(vert[ind, 1] - y1) < 1.e-4)[0]
+        assert(len(il) == 2)
+        key = '{0}_{1}'.format(*[x for x in sorted(vox[ind[il]])])
+        lines.add(key)
+        il = np.nonzero(np.abs(vert[ind, 0] - x0) < 1.e-4)[0]
+        assert(len(il) == 2)
+        key = '{0}_{1}'.format(*[x for x in sorted(vox[ind[il]])])
+        lines.add(key)
+        il = np.nonzero(np.abs(vert[ind, 0] - x1) < 1.e-4)[0]
+        assert(len(il) == 2)
+        key = '{0}_{1}'.format(*[x for x in sorted(vox[ind[il]])])
+        lines.add(key)
+
+    nf = len(faces)*2
+    flist = []
+    for key in faces:
+        hh = key.split('_')
+        flist.append(3)
+        [flist.append(int(x)) for x in hh[0:3]]
+        flist.append(3)
+        [flist.append(int(x)) for x in hh[1:4]]
+
+
+    nl = len(lines)
+    llist = []
+    for key in lines:
+        llist.append(2)
+        [llist.append(int(x)) for x in key.split('_')]
+
+    mesh = pv.PolyData(var_inp=nodes, faces=flist, n_faces=nf,
+                       lines=llist, n_lines=nl)
+    return mesh

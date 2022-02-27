@@ -24,10 +24,11 @@ cdef extern from "cpp_wrapper.h":
     double EE3D[7][7]  # rotatated material stiffness tensor, defined in Model.mesh
     
     # atomistic quantities
+    int natom  # number of atoms, defined in set_up_atoms
     double bv  # magnitude of Burgers vector, defined in atom_set_up
     double shift[2]  # shift between atmomistic coords and nodal positions
-    double coords[20000][3]  # atomic positions in reference configuration
-    double at_disp[20000][3]  # atomic displacements
+    double coords[20000][3]  # atomic positions in reference configuration, defined in set_up_atoms
+    double at_disp[20000][3]  # atomic displacements, defined in nodal_displacement
     
     # XFEM quantities
     int NNODE  # number of nodes, defined in create_mesh

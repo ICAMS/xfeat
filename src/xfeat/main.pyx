@@ -11,6 +11,8 @@ import os
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+import pyvista as pv
+import vtk
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
 from xfeat cimport cpp_wrapper as xfc
@@ -134,6 +136,16 @@ class Model(object):
             self.lp = 2.*self.bv/np.sqrt(3.)
             print('New value: {}'.format(self.lp))
         self.shift = xfc.shift  # shift along slip plane
+        self.Lx = xfc.Lx  # dimensions of atomic box
+        self.Ly = xfc.Ly
+        self.Lz = xfc.Lz
+        self.natom = xfc.natom  # number of atoms
+        # get reference atomic positions in coordinates of XFEM model
+        hh = np.array(xfc.coords, dtype=np.double)
+        self.apos = hh[1:self.natom+1, 0:3]
+        self.apos[:, 0] -= 0.5*self.Lx - self.shift[0]
+        self.apos[:, 1] -= 0.5*self.Ly - self.shift[1]
+        #self.apos[:, 2] -= 0.5*self.Lz
         return
     
     
@@ -185,20 +197,17 @@ class Model(object):
         self.nodes[:, 2] = xfc.Zglob
         #self.n_cnstr = xfc.NCONT
         #self.nodes_c = np.array(xfc.ContraintNodes, dtype=int)
-        LOTOGO = np.array(xfc.LOTOGO, dtype=int)
+        LOTOGO = np.array(xfc.LOTOGO, dtype=int) - 1
         self.NEL = int(len(LOTOGO) / 8)
         self.elmts = LOTOGO.reshape((self.NEL, 8))
         self.el_ctr = np.zeros((self.NEL, 3), dtype=np.double)
         for IEL in range(self.NEL):
-            self.el_ctr[IEL,0] = np.mean(self.nodes[self.elmts[IEL,:]-1, 0])
-            self.el_ctr[IEL,1] = np.mean(self.nodes[self.elmts[IEL,:]-1, 1])
-            self.el_ctr[IEL,2] = np.mean(self.nodes[self.elmts[IEL,:]-1, 2])
+            self.el_ctr[IEL,0] = np.mean(self.nodes[self.elmts[IEL,:], 0])
+            self.el_ctr[IEL,1] = np.mean(self.nodes[self.elmts[IEL,:], 1])
+            self.el_ctr[IEL,2] = np.mean(self.nodes[self.elmts[IEL,:], 2])
         self.NEL_x = xfc.nelem_full_big_box_x
         self.NEL_y = xfc.nelem_full_big_box_y
         self.NEL_z = xfc.nelem_full_big_box_z
-        self.Lx = xfc.Lx
-        self.Ly = xfc.Ly
-        self.Lz = xfc.Lz
         
         # setup system stiffness matrix for XFEM
         xfc.init_matrix()  # calculates Aglob matrix in CSR format
@@ -215,6 +224,14 @@ class Model(object):
         # https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html
         a_csr.setdiag(0.5*a_csr.diagonal())
         self.a_csr = a_csr + a_csr.transpose()
+        
+        # create pyVista mesh
+        cells = np.ones((self.NEL, 9), dtype=int)*8
+        cells[:,1:9] = self.elmts
+        celltypes = np.empty(self.NEL, dtype=np.uint8)
+        celltypes[:] = vtk.VTK_HEXAHEDRON
+        self.grid = pv.UnstructuredGrid(cells.ravel(), celltypes, self.nodes)
+
 
     def solve(self):
         '''
@@ -282,6 +299,8 @@ class Model(object):
         xfc.displacement_interpolation()  # calculate strain on type 4 atoms
         # create IMD input file with updates positions of type 4 atoms
         xfc.create_atom_dis()  # create dislocation in atomic core
+        self.relax_atoms(name='init_dislocation')
+        print('\n Created screw dislocation in model.\n')
         
     def atom_bc(self):
         '''
@@ -297,6 +316,8 @@ class Model(object):
 
         '''
         xfc.nodal_displacement()  # calculate BC from relaxed atomic positions
+        hh =  np.array(xfc.at_disp, dtype=np.double)
+        self.at_disp =hh[1:self.natom+1]
         
     def shift_atoms(self):
         '''
@@ -404,15 +425,15 @@ class Model(object):
         s_field = np.zeros((self.NEL, 3), dtype=np.double)
         for IEL in range(self.NEL):
             for j in range(8):
-                XLOC[j+1] = self.nodes[self.elmts[IEL, j] - 1, 0]
-                YLOC[j+1] = self.nodes[self.elmts[IEL, j] - 1, 1]
-                ZLOC[j+1] = self.nodes[self.elmts[IEL, j] - 1, 2]
+                XLOC[j+1] = self.nodes[self.elmts[IEL, j], 0]
+                YLOC[j+1] = self.nodes[self.elmts[IEL, j], 1]
+                ZLOC[j+1] = self.nodes[self.elmts[IEL, j], 2]
             xfc.STRESS(XLOC, YLOC, ZLOC, IEL)
             s_field[IEL,:] = xfc.sigma
         return s_field
         
             
-    def plot_nodal(self, tag, comp='z'):
+    def plot_nodal(self, tag, comp='z', layer=None, atoms=True):
         '''
         Plot given component of nodal siolution.
 
@@ -443,22 +464,38 @@ class Model(object):
         else:
             raise ValueError('Unknown value for parameter comp: {}'
                              .format(comp))
+        # select layer of nodes to be plotted
+        zc = np.unique(self.nodes[:, 2])
+        if layer is None:
+            layer = int(len(zc)/2)
+        ind = np.nonzero(np.abs(self.nodes[:,2] - zc[layer]) < 1.e-4)[0]
+            
         # select quantity to be plotted
         if tag == 'ubc':
             self.ubc = np.array(xfc.ENFRDISPglob[3:], dtype=np.double)
-            quant = self.ubc[istart::3]
+            quant = self.ubc[istart + ind*3]
             title = 'Boundary conditions for u_{}'.format(comp)
         elif tag == 'u':
-            quant = self.u[istart::3]
+            quant = self.u[istart + ind*3]
             title = 'Nodal solution for displacement u_{}'.format(comp)
         elif tag == 'f':
-            quant = self.f[istart::3]
+            quant = self.f[istart + ind*3]
             title = 'Nodal solution for force f_{}'.format(comp)
         else:
             raise ValueError('Unknown value for parameter tag: {}')
-        plt.scatter(self.nodes[:,0], self.nodes[:,1], c=quant, marker='s', s=8)
+
+        plt.scatter(self.nodes[ind, 0], self.nodes[ind, 1],
+                    c=quant, marker=',')
         plt.colorbar()
         plt.title(title)
+        
+        if atoms and tag == 'u':
+            ind = np.nonzero(np.abs(self.apos[:,2] - zc[layer]) < 0.3)[0]
+            if len(ind) == 0:
+                raise ValueError('XFEM mesh and nodal positions do not conform.')
+            plt.scatter(self.apos[ind, 0], self.apos[ind, 1],
+                        c=self.at_disp[ind, istart], marker=',')
+            
         plt.show()
         
     def plot_el(self, tag, comp='yz', sig=None):
@@ -477,7 +514,7 @@ class Model(object):
 
         plt.figure()
         plt.scatter(self.el_ctr[iz::3, 0],  self.el_ctr[iz::3, 1],
-                    c=sig[iz::3, sc], marker='s', s=8)
+                    c=sig[iz::3, sc], marker=',')
         plt.colorbar()
         plt.title('Stress component {} at z={:5.4}'
                   .format(sc, self.el_ctr[iz, 2]))
