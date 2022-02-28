@@ -12,7 +12,7 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 import pyvista as pv
-import vtk
+from vtk import VTK_HEXAHEDRON
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
 from xfeat cimport cpp_wrapper as xfc
@@ -146,6 +146,9 @@ class Model(object):
         self.apos[:, 0] -= 0.5*self.Lx - self.shift[0]
         self.apos[:, 1] -= 0.5*self.Ly - self.shift[1]
         #self.apos[:, 2] -= 0.5*self.Lz
+        
+        # create pyVista atomistic grid
+        self.atom_grid = pv.PolyData(self.apos)
         return
     
     
@@ -225,11 +228,11 @@ class Model(object):
         a_csr.setdiag(0.5*a_csr.diagonal())
         self.a_csr = a_csr + a_csr.transpose()
         
-        # create pyVista mesh
+        # create pyVista XFEM grid
         cells = np.ones((self.NEL, 9), dtype=int)*8
         cells[:,1:9] = self.elmts
         celltypes = np.empty(self.NEL, dtype=np.uint8)
-        celltypes[:] = vtk.VTK_HEXAHEDRON
+        celltypes[:] = VTK_HEXAHEDRON
         self.grid = pv.UnstructuredGrid(cells.ravel(), celltypes, self.nodes)
 
 
@@ -483,7 +486,29 @@ class Model(object):
             title = 'Nodal solution for force f_{}'.format(comp)
         else:
             raise ValueError('Unknown value for parameter tag: {}')
-
+            
+        self.grid.point_data['u_1'] = self.u[0::3]
+        self.grid.point_data['u_2'] = self.u[1::3]
+        self.grid.point_data['u_3'] = self.u[2::3]
+        
+        pl = pv.Plotter()
+        pl.camera_position = (1.0, 0.0, 2*self.fem_size)
+        pl.camera.azimuth = 270
+        self.grid.set_active_scalars('u_3')
+        pl.add_mesh(self.grid, show_edges=True,
+                    scalar_bar_args=dict(vertical=True, position_y=0.25))
+        if atoms and tag == 'u':
+            umin = np.amin(self.grid.active_scalars)
+            umax = np.amax(self.grid.active_scalars)
+            self.atom_grid.point_data['u_1'] = self.at_disp[:, 0]
+            self.atom_grid.point_data['u_2'] = self.at_disp[:, 1]
+            self.atom_grid.point_data['u_3'] = self.at_disp[:, 2]
+            self.atom_grid.set_active_scalars('u_3')
+            pl.add_mesh(self.atom_grid, style='points', point_size=10,
+                        render_points_as_spheres=True, show_scalar_bar=False,
+                        clim=(umin, umax))
+        pl.show()
+        """
         plt.scatter(self.nodes[ind, 0], self.nodes[ind, 1],
                     c=quant, marker=',')
         plt.colorbar()
@@ -497,6 +522,8 @@ class Model(object):
                         c=self.at_disp[ind, istart], marker=',')
             
         plt.show()
+        """
+        return
         
     def plot_el(self, tag, comp='yz', sig=None):
         if comp == 'yz':
@@ -510,6 +537,14 @@ class Model(object):
                              .format(comp))
         if sig is None:
             sig = self.calc_stress()  # evaluate element stresses
+            
+        self.grid.cell_data['sig_12'] = sig[:, 0]
+        self.grid.cell_data['sig_13'] = sig[:, 1]
+        self.grid.cell_data['sig_23'] = sig[:, 2]
+        self.grid.set_active_scalars('sig_23')
+        self.grid.plot(cpos='xy', show_edges=True,
+                    scalar_bar_args=dict(vertical=True, position_y=0.25))
+        """
         iz = 1
 
         plt.figure()
@@ -519,3 +554,5 @@ class Model(object):
         plt.title('Stress component {} at z={:5.4}'
                   .format(sc, self.el_ctr[iz, 2]))
         plt.show()
+        """
+        return
