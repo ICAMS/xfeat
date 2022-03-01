@@ -35,48 +35,49 @@ mod.mesh()
 # create screw dislocation
 mod.init_dislo()
 # plot nodes with boundary conditions
-#mod.plot_nodal('ubc')
+#mod.plot('ubcz')
 
 # iterate into relaxed configuration
-for i in range(5):
+for i in range(10):
     # relax atomic region under shear strain
-    mod.relax_atoms(i)  # relax atomic structure with fixed boundary atoms
     mod.atom_bc()  # apply relaxed atom positions as BC to XFEM 
     mod.solve()  # colculate nodal displacements for mechanical equilibrium
     mod.shift_atoms()  # move boundary atoms according to strain field
+    mod.relax_atoms(i)  # relax atomic structure with fixed boundary atoms
+    mod.plot('uy')
 
 # plot nodes with boundary conditions
-mod.plot_nodal('ubc')
-#plot nodal displacement
-mod.plot_nodal('u')
-#plot nodal force
-mod.plot_nodal('f')
+mod.plot('ubcz')
+# plot nodal displacement
+mod.plot('epot')
+# plot potential energy of atoms
+mod.plot('uz')
 # plot stresses
-sig0 = mod.calc_stress()
-mod.plot_el('sig', sig=sig0)
+mod.plot('sigyz')
 
 # Apply sub-critical shear stress on boundary
 mod.apply_bc(1.55)
 # iterate into relaxed configuration
 for i in range(10):
-    mod.relax_atoms(i, name='applied_stress_155')
     mod.atom_bc()
     mod.solve()
     mod.shift_atoms()
+    mod.relax_atoms(i, name='applied_stress_155')
 
 # plot stresses
-sig1 = mod.calc_stress()
-mod.plot_el('sig', sig=sig1)
+mod.plot('sigyz')
+mod.plot('epot')
 
 # Apply critical shear stress on boundary
 mod.apply_bc(1.65)
 # iterate into relaxed configuration
 for i in range(10):
-    mod.relax_atoms(i, name='applied_stress_165')
     mod.atom_bc()
     mod.solve()
     mod.shift_atoms()
+    mod.relax_atoms(i, name='applied_stress_165')
 
 # plot stresses
-sig2 = mod.calc_stress()
-mod.plot_el('sig', sig=sig2)
+mod.plot('sigyz')
+mod.plot('epot')
+
