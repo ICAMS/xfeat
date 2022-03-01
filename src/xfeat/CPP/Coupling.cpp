@@ -639,7 +639,7 @@ void nodal_displacement() {
 
 	int number, type;
 	double mass, x, y, z;
-	double dz;
+	double dz, epot;
 
 	std::string line;
 	char *token;
@@ -673,6 +673,9 @@ void nodal_displacement() {
 				case 6:
 					z = strtod(token, NULL);
 					break;
+				case 10:
+    				    epot = strtod(token, NULL);
+    					break;
 				}
 			}
 
@@ -687,6 +690,7 @@ void nodal_displacement() {
                     dz = dz + Lz;
             }
             at_disp[number][2] = dz;
+            at_energy[number] = epot;
 
 		} //looping over lines which don't have #
 

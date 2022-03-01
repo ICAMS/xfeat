@@ -24,6 +24,7 @@ double bv;
 double shift[2];
 double coords[ATOMTOTAL][3];
 double at_disp[ATOMTOTAL][3];
+double at_energy[ATOMTOTAL];
 
 // XFEM quantities
 int NNODE, NLAG, NEL, NDF, xdof;

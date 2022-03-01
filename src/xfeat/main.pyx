@@ -281,6 +281,15 @@ class Model(object):
             iicon = self.JJglob[i]
             if iicon >= 0: 
                 self.f[i] = self.Fglob[iicon]
+        self.grid.point_data['u_x'] = self.u[0::3]
+        self.grid.point_data['u_y'] = self.u[1::3]
+        self.grid.point_data['u_z'] = self.u[2::3]
+        self.grid.point_data['f_x'] = self.f[0::3]
+        self.grid.point_data['f_y'] = self.f[1::3]
+        self.grid.point_data['f_z'] = self.f[2::3]
+        self.grid.point_data['ubc_x'] = self.ubc[0::3]
+        self.grid.point_data['ubc_y'] = self.ubc[1::3]
+        self.grid.point_data['ubc_z'] = self.ubc[2::3]
         return
     
     def init_dislo(self):
@@ -296,6 +305,9 @@ class Model(object):
         # XFEM elements and atomic core
         xfc.create_xfem_dis()  # create displacements in XFEM region
         self.ubc = np.array(xfc.ENFRDISPglob[3:], dtype=np.double)
+        self.grid.point_data['ubc_x'] = self.ubc[0::3]
+        self.grid.point_data['ubc_y'] = self.ubc[1::3]
+        self.grid.point_data['ubc_z'] = self.ubc[2::3]
         self.solve()  # calculate nodal displacements under BC of shift
         xfc.atom_element()  # assign type 4 atoms to elements
         xfc.atom_node()  # assign type 2 atoms to nodes
@@ -308,6 +320,7 @@ class Model(object):
     def atom_bc(self):
         '''
         Get displacement of relaxed atoms and apply as BC to XFEM model
+        Get potential energies of atoms
         Reads atomistic configuration from file: 
             relaxed_atomistic_dislocation_structure.00000.ss
         Atomic displacements are calculated relative to:
@@ -319,8 +332,16 @@ class Model(object):
 
         '''
         xfc.nodal_displacement()  # calculate BC from relaxed atomic positions
+        self.ubc = np.array(xfc.ENFRDISPglob[3:], dtype=np.double)
+        self.grid.point_data['ubc_x'] = self.ubc[0::3]
+        self.grid.point_data['ubc_y'] = self.ubc[1::3]
+        self.grid.point_data['ubc_z'] = self.ubc[2::3]
         hh =  np.array(xfc.at_disp, dtype=np.double)
-        self.at_disp =hh[1:self.natom+1]
+        self.atom_grid.point_data['u_x'] = hh[1:self.natom+1, 0]
+        self.atom_grid.point_data['u_y'] = hh[1:self.natom+1, 1]
+        self.atom_grid.point_data['u_z'] = hh[1:self.natom+1, 2]
+        hh = np.array(xfc.at_energy, dtype=np.double)
+        self.atom_grid.point_data['epot'] = hh[1:self.natom+1]
         
     def shift_atoms(self):
         '''
@@ -403,9 +424,13 @@ class Model(object):
             raise ValueError('Unsupported parameter bc_type: {}'
                              .format(bc_type))
         xfc.apply_e23_outer(e23)
+        self.ubc = np.array(xfc.ENFRDISPglob[3:], dtype=np.double)
+        self.grid.point_data['ubc_x'] = self.ubc[0::3]
+        self.grid.point_data['ubc_y'] = self.ubc[1::3]
+        self.grid.point_data['ubc_z'] = self.ubc[2::3]
         self.solve()
         self.shift_atoms()
-        self.ubc = np.array(xfc.ENFRDISPglob[3:], dtype=np.double)
+        
         
     
     def calc_stress(self):
@@ -433,12 +458,15 @@ class Model(object):
                 ZLOC[j+1] = self.nodes[self.elmts[IEL, j], 2]
             xfc.STRESS(XLOC, YLOC, ZLOC, IEL)
             s_field[IEL,:] = xfc.sigma
+        self.grid.cell_data['sig_xy'] = s_field[:, 0]
+        self.grid.cell_data['sig_xz'] = s_field[:, 1]
+        self.grid.cell_data['sig_yz'] = s_field[:, 2]
         return s_field
         
             
-    def plot_nodal(self, tag, comp='z', layer=None, atoms=True):
+    def plot_nodal(self, tag, comp='z', atoms=True, deformed=None):
         '''
-        Plot given component of nodal siolution.
+        Plot given component of nodal solution.
 
         Parameters
         ----------
@@ -453,106 +481,123 @@ class Model(object):
 
         '''
         # select component to be plotted
-        if type(comp)==int:
-            if comp<0 or comp>2:
-                raise ValueError('Parameter comp mus be in range 0...2, not {}.'
-                                 .format(comp))
-            istart = comp
-        elif comp.lower() == 'z':
-            istart = 2
-        elif comp.lower() == 'y':
-            istart = 1
-        elif comp.lower() == 'x':
-            istart = 0
-        else:
+        comp = comp.lower()
+        tag = tag.lower()
+        if tag[-1] == 'z' or tag[-1] == 'y' or tag[-1] == 'x':
+            comp = tag[-1]
+            tag = tag[0:-1]
+        elif comp != 'z' and comp != 'y' and comp != 'x':
             raise ValueError('Unknown value for parameter comp: {}'
                              .format(comp))
-        # select layer of nodes to be plotted
-        zc = np.unique(self.nodes[:, 2])
-        if layer is None:
-            layer = int(len(zc)/2)
-        ind = np.nonzero(np.abs(self.nodes[:,2] - zc[layer]) < 1.e-4)[0]
             
         # select quantity to be plotted
         if tag == 'ubc':
-            self.ubc = np.array(xfc.ENFRDISPglob[3:], dtype=np.double)
-            quant = self.ubc[istart + ind*3]
-            title = 'Boundary conditions for u_{}'.format(comp)
+            title = r'BC $u_{}$ (A)'.format(comp)
+            sc = 'ubc_{}'.format(comp)
         elif tag == 'u':
-            quant = self.u[istart + ind*3]
-            title = 'Nodal solution for displacement u_{}'.format(comp)
+            title = r'$u_{}$ (A)'.format(comp)
+            sc = 'u_{}'.format(comp)
         elif tag == 'f':
-            quant = self.f[istart + ind*3]
-            title = 'Nodal solution for force f_{}'.format(comp)
+            title = r'$f_{}$ (10$^{}$N)'.format(comp, r'{-11}')
+            sc = 'f_{}'.format(comp)
         else:
             raise ValueError('Unknown value for parameter tag: {}')
-            
-        self.grid.point_data['u_1'] = self.u[0::3]
-        self.grid.point_data['u_2'] = self.u[1::3]
-        self.grid.point_data['u_3'] = self.u[2::3]
         
         pl = pv.Plotter()
         pl.camera_position = (1.0, 0.0, 2*self.fem_size)
         pl.camera.azimuth = 270
-        self.grid.set_active_scalars('u_3')
-        pl.add_mesh(self.grid, show_edges=True,
-                    scalar_bar_args=dict(vertical=True, position_y=0.25))
+        self.grid.set_active_scalars(sc)
+        umin = np.amin(self.grid.active_scalars)
+        umax = np.amax(self.grid.active_scalars)
         if atoms and tag == 'u':
-            umin = np.amin(self.grid.active_scalars)
-            umax = np.amax(self.grid.active_scalars)
-            self.atom_grid.point_data['u_1'] = self.at_disp[:, 0]
-            self.atom_grid.point_data['u_2'] = self.at_disp[:, 1]
-            self.atom_grid.point_data['u_3'] = self.at_disp[:, 2]
-            self.atom_grid.set_active_scalars('u_3')
+            self.atom_grid.set_active_scalars(sc)
+            umin = np.minimum(umin, np.amin(self.atom_grid.active_scalars))
+            umax = np.maximum(umax, np.amax(self.atom_grid.active_scalars))
             pl.add_mesh(self.atom_grid, style='points', point_size=10,
                         render_points_as_spheres=True, show_scalar_bar=False,
                         clim=(umin, umax))
+        pl.add_mesh(self.grid, show_edges=True, clim=(umin, umax),
+                    scalar_bar_args=dict(vertical=True, position_y=0.25,
+                                         title=title))
         pl.show()
-        """
-        plt.scatter(self.nodes[ind, 0], self.nodes[ind, 1],
-                    c=quant, marker=',')
-        plt.colorbar()
-        plt.title(title)
-        
-        if atoms and tag == 'u':
-            ind = np.nonzero(np.abs(self.apos[:,2] - zc[layer]) < 0.3)[0]
-            if len(ind) == 0:
-                raise ValueError('XFEM mesh and nodal positions do not conform.')
-            plt.scatter(self.apos[ind, 0], self.apos[ind, 1],
-                        c=self.at_disp[ind, istart], marker=',')
-            
-        plt.show()
-        """
         return
         
     def plot_el(self, tag, comp='yz', sig=None):
+        tag = tag.lower()
+        comp = comp.lower()
+        if tag[-2:] == 'yz' or tag[-2:] == 'xz' or tag[-2:] == 'xy':
+            comp = tag[-2:]
+            tag = tag[0:-2]
+        if tag != 'sig':
+            raise ValueError('Only stresses defined on elements.')
+            
         if comp == 'yz':
-            sc = 2
-        elif comp == 'xx':
-            sc = 0
-        elif comp == 'yy':
-            sc = 1
+            sc = 'sig_yz'
+            title = r'$\sigma_{yz} (GPa)$'
+        elif comp == 'xy':
+            sc = 'sig_xy'
+            title = r'$\sigma_{xy} (GPa)$'
+        elif comp == 'xz':
+            sc = 'sig_xz'
+            title = r'$\sigma_{xz} (GPa)$'
         else:
             raise ValueError('Value for parameter comp not valid: {}'
                              .format(comp))
         if sig is None:
             sig = self.calc_stress()  # evaluate element stresses
-            
-        self.grid.cell_data['sig_12'] = sig[:, 0]
-        self.grid.cell_data['sig_13'] = sig[:, 1]
-        self.grid.cell_data['sig_23'] = sig[:, 2]
-        self.grid.set_active_scalars('sig_23')
-        self.grid.plot(cpos='xy', show_edges=True,
-                    scalar_bar_args=dict(vertical=True, position_y=0.25))
-        """
-        iz = 1
 
-        plt.figure()
-        plt.scatter(self.el_ctr[iz::3, 0],  self.el_ctr[iz::3, 1],
-                    c=sig[iz::3, sc], marker=',')
-        plt.colorbar()
-        plt.title('Stress component {} at z={:5.4}'
-                  .format(sc, self.el_ctr[iz, 2]))
-        plt.show()
-        """
+        self.grid.set_active_scalars(sc)
+        self.grid.plot(cpos='xy', show_edges=True,
+                    scalar_bar_args=dict(vertical=True, position_y=0.25,
+                                         title=title))
         return
+    
+    def plot_at(self, tag, deformed=None):
+        tag = tag.lower()
+        if tag == 'epot':
+            sc = 'epot'
+            title = r'$E_{pot}$ (eV)'
+        elif tag == 'uz' or tag == 'dispz':
+            sc = 'u_z'
+            title = r'$u_z$ (A)'
+        elif tag == 'uy' or tag == 'dispy':
+            sc = 'u_y'
+            title = r'$u_y$ (A)'
+        elif tag == 'ux' or tag == 'dispx':
+            sc = 'u_x'
+            title = r'$u_x$ (A)'
+        else:
+            raise ValueError('Unknown value in parameter tag: {}'.format(tag))
+            
+        self.atom_grid.set_active_scalars(sc)
+        vmin = np.amin(self.atom_grid.active_scalars)
+        vmax = np.amax(self.atom_grid.active_scalars)
+        if sc == 'epot':
+            vmax = vmin*0.95
+        # pl = pv.Plotter()
+        # pl.camera_position = (1.0, 0.0, 2*self.fem_size)
+        # pl.camera.azimuth = 270
+        # pl.add_mesh(self.atom_grid, style='points', point_size=20,
+        #             render_points_as_spheres=True)
+        # pl.show()
+        self.atom_grid.plot(cpos='xy', style='points', point_size=20,
+                    render_points_as_spheres=True, clim=(vmin, vmax),
+                    scalar_bar_args=dict(vertical=True, position_y=0.25,
+                                 title=title))
+
+    def plot(self, tag, deformed=None):
+        tag = tag.lower()
+        if tag == 'epot':
+            self.plot_at(tag, deformed=deformed)
+        elif tag == 'uz' or tag == 'uy' or tag == 'ux':
+            self.plot_nodal(tag, deformed=deformed)
+        elif tag == 'fz' or tag == 'fy' or tag == 'fx':
+            self.plot_nodal(tag, deformed=deformed)
+        elif tag == 'ubcz' or tag == 'ubcy' or tag == 'ubcx':
+            self.plot_nodal(tag, deformed=deformed)
+        elif tag == 'dispx' or tag == 'dispy' or tag == 'dispz':
+            self.plot_at(tag, deformed=deformed)
+        elif tag == 'sigxy' or tag == 'sigxz' or tag == 'sigyz':
+            self.plot_el(tag='sig', comp=tag[-2:])
+        else:
+            raise ValueError('Unknown value in parameter tag.')

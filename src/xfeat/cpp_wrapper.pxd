@@ -29,6 +29,7 @@ cdef extern from "cpp_wrapper.h":
     double shift[2]  # shift between atmomistic coords and nodal positions
     double coords[20000][3]  # atomic positions in reference configuration, defined in set_up_atoms
     double at_disp[20000][3]  # atomic displacements, defined in nodal_displacement
+    double at_energy[20000]  # potential energy of atoms
     
     # XFEM quantities
     int NNODE  # number of nodes, defined in create_mesh
