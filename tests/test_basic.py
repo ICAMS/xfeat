@@ -39,14 +39,13 @@ def test_init_dislo():
 
 def test_iteration():
     # relax atomic region under shear strain
-    #mod.relax_atoms(0)  # relax atomic structure with fixed boundary atoms
     mod.atom_bc()  # apply relaxed atom positions as BC to XFEM 
     mod.solve()  # colculate nodal displacements for mechanical equilibrium
     
     # calculate stresses
     sig0 = mod.calc_stress()
-    assert(np.abs(np.amax(sig0) - 0.014016281368679861) < 1.e-5)
-    assert(np.abs(np.amin(sig0) + 0.013673030279590912) < 1.e-5)
+    assert(np.abs(np.amax(sig0) - 2.2458018354577853) < 1.e-5)
+    assert(np.abs(np.amin(sig0) + 2.1907796579448022) < 1.e-5)
 
 def test_apply_bc():
     # Apply shear stress on boundary

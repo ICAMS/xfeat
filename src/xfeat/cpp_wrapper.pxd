@@ -40,8 +40,12 @@ cdef extern from "cpp_wrapper.h":
     int nelem_full_big_box_x  # number of elements along x-axis
     int nelem_full_big_box_y
     int nelem_full_big_box_z
+    double DIR1[9], DIR2[9], DIR3[9]
+    double A[7][10]
+    double et[4]
     double Lx, Ly, Lz  # lengths of axes of atomic box
-    double sigma[3]  # three components of stress tensor in element, calulated in STRESS
+    double stress[6]  # Voigt stress tensor in element, calulated in calc_stress
+    double strain[6]  # Voigt strain tensor in element, calulated in calc_stress
     vector[int] Iglob  # indices of compressed stiffness matrix
     vector[int] Jglob  # columnes of compressed stiffness matrix
     vector[int] JJglob  # number of equation in global system per node (negative of no DOF for node)
@@ -66,4 +70,4 @@ cdef extern from "cpp_wrapper.h":
     void nodal_displacement()  # calculate displacements on inner boundary nodes from type 2 atoms
     void create_xfem_dis()  # create displacements for Volterra dislocation in XFEM part
     void apply_e23_outer(double e23)  # apply shear strain on outer XFEM boundary
-    void STRESS(double XLOC[9], double YLOC[9], double ZLOC[9], int IEL)  # evaluate element stress
+    void calc_stress(double XLOC[9], double YLOC[9], double ZLOC[9], int IEL)  # evaluate element stress

@@ -5,12 +5,7 @@ channels:
 dependencies:
   - cython
   - numpy
-  - matplotlib
   - scipy
   - pytest
-  - jupyter
-  - jupyterlab
-  - sphinx
-  - spyder
   - pyvista
 

@@ -1,3 +1,51 @@
+bool augmented_element(int i){
+    /* Test if element #i is an augmented element with additional DOF
+    
+    Parameters 
+    ----------
+    i : int 
+        element number
+        
+    Returns
+    -------
+    cond : bool
+        Condition if augmented element
+    */
+    bool condition1 = false;
+    bool condition2 = false;
+    
+    if ((Xglob[LOTOGO[8*i] - 1] <= 0.0)
+        && (Xglob[LOTOGO[8*i + (2 - 1)]-1] <= 0.0)
+        && (Xglob[LOTOGO[8*i + (3 - 1)]-1] <= 0.0)
+        && (Xglob[LOTOGO[8*i + (4 - 1)]-1] <= 0.0)
+        && (Xglob[LOTOGO[8*i + (5 - 1)]-1] <= 0.0)
+        && (Xglob[LOTOGO[8*i + (6 - 1)]-1] <= 0.0)
+        && (Xglob[LOTOGO[8*i + (7 - 1)]-1] <= 0.0)
+        && (Xglob[LOTOGO[8*i + (8 - 1)]-1] <= 0.0)) {
+
+        if ((Yglob[LOTOGO[8*i] - 1] < 0.0)
+                || (Yglob[LOTOGO[8*i + (2 - 1)]-1] < 0.0)
+                || (Yglob[LOTOGO[8*i + (3 - 1)]-1] < 0.0)
+                || (Yglob[LOTOGO[8*i + (4 - 1)]-1] < 0.0)
+                || (Yglob[LOTOGO[8*i + (5 - 1)]-1] < 0.0)
+                || (Yglob[LOTOGO[8*i + (6 - 1)]-1] < 0.0)
+                || (Yglob[LOTOGO[8*i + (7 - 1)]-1] < 0.0)
+                || (Yglob[LOTOGO[8*i + (8 - 1)]-1] < 0.0))
+            condition1 = true;
+
+        if ((Yglob[LOTOGO[8*i] - 1] > 0.0)
+                || (Yglob[LOTOGO[8*i + (2 - 1)]-1] > 0.0)
+                || (Yglob[LOTOGO[8*i + (3 - 1)]-1] > 0.0)
+                || (Yglob[LOTOGO[8*i + (4 - 1)]-1] > 0.0)
+                || (Yglob[LOTOGO[8*i + (5 - 1)]-1] > 0.0)
+                || (Yglob[LOTOGO[8*i + (6 - 1)]-1] > 0.0)
+                || (Yglob[LOTOGO[8*i + (7 - 1)]-1] > 0.0)
+                || (Yglob[LOTOGO[8*i + (8 - 1)]-1] > 0.0))
+            condition2 = true;
+    }
+        
+    return condition1 && condition2;
+}
 int EqNum(int * JJglob, int Njoint) {
 	int Ndf = 0;
 	for (int i = 1; i < Njoint + 1; i++)
@@ -77,7 +125,7 @@ void AssemDislocationForce(int Iel) {
 void ENFORCEDFORCE(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN],
 		int IEL) {
 
-	double A[NDS][10], B[10][10], C[10][NDLOC];
+	double B[10][10], C[10][NDLOC];
 	double BB[NDS][NDLOC], BBTRAN[NDLOC][NDS];
 
 	double SND[ND][NODEN];
@@ -85,25 +133,7 @@ void ENFORCEDFORCE(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN],
 	double BBTRANE[NDLOC][NDS], AB[NDS][10];
 
 	double SHI, NEW, KSHI, Det;
-	double DIR1[NODEN], DIR2[NODEN], DIR3[NODEN], COR[NODEN][ND];
-
-	DIR1[1] = DIR2[4] = DIR3[3] = -1.0;
-	DIR1[2] = DIR2[8] = DIR3[4] = -1.0;
-	DIR1[3] = DIR2[3] = DIR3[7] = 1.0;
-	DIR1[4] = DIR2[7] = DIR3[8] = 1.0;
-	DIR1[5] = DIR2[1] = DIR3[2] = -1.0;
-	DIR1[6] = DIR2[5] = DIR3[1] = -1.0;
-	DIR1[7] = DIR2[2] = DIR3[5] = 1.0;
-	DIR1[8] = DIR2[6] = DIR3[6] = 1.0;
-
-	for (int i = 0; i < NDS; i++)
-		for (int j = 0; j < 10; j++)
-			A[i][j] = 0.0;
-
-	A[1][1] = A[2][5] = A[3][9] = 1.0;
-	A[4][2] = A[4][4] = 1.0;
-	A[5][6] = A[5][8] = 1.0;
-	A[6][3] = A[6][7] = 1.0;
+	double COR[NODEN][ND];
 
 	for (int i = 0; i < NDLOC; i++)
 		ENFLOC[i] = 0.0;
@@ -131,10 +161,9 @@ void ENFORCEDFORCE(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN],
 						SND[i][j] = 0.0;
 
 				for (int j = 1; j < NODEN; j++) {
-					//Order changed to match Abaqus numbering
-					SND[2][j] = (1.0 / 8.0) * DIR1[j] * (1.0 + NEW * DIR2[j])
+					SND[1][j] = (1.0 / 8.0) * DIR1[j] * (1.0 + NEW * DIR2[j])
 							* (1.0 + KSHI * DIR3[j]);
-					SND[1][j] = (1.0 / 8.0) * DIR2[j] * (1.0 + SHI * DIR1[j])
+					SND[2][j] = (1.0 / 8.0) * DIR2[j] * (1.0 + SHI * DIR1[j])
 							* (1.0 + KSHI * DIR3[j]);
 					SND[3][j] = (1.0 / 8.0) * DIR3[j] * (1.0 + NEW * DIR2[j])
 							* (1.0 + SHI * DIR1[j]);
@@ -249,10 +278,10 @@ void ENFORCEDFORCE(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN],
 			}
 }
 
-void DISLOCATIONFORCE(double XLOC[NODEN], double YLOC[NODEN],
-		double ZLOC[NODEN], int IEL, double bv, double et[ND]) {
+void DISLOCATIONFORCE(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN],
+                      int IEL) {
 
-	double A[NDS][10], B[10][10], C[10][NDLOC];
+	double B[10][10], C[10][NDLOC];
 	double BB[NDS][NDLOC], BBTRAN[NDLOC][NDS];
 
 	double SND[ND][NODEN];
@@ -260,30 +289,12 @@ void DISLOCATIONFORCE(double XLOC[NODEN], double YLOC[NODEN],
 	double BBTRANE[NDLOC][NDS], AB[NDS][10];
 
 	double SHI, NEW, KSHI, Det;
-	double DIR1[NODEN], DIR2[NODEN], DIR3[NODEN], COR[NODEN][ND];
-
-	DIR1[1] = DIR2[4] = DIR3[3] = -1.0;
-	DIR1[2] = DIR2[8] = DIR3[4] = -1.0;
-	DIR1[3] = DIR2[3] = DIR3[7] = 1.0;
-	DIR1[4] = DIR2[7] = DIR3[8] = 1.0;
-	DIR1[5] = DIR2[1] = DIR3[2] = -1.0;
-	DIR1[6] = DIR2[5] = DIR3[1] = -1.0;
-	DIR1[7] = DIR2[2] = DIR3[5] = 1.0;
-	DIR1[8] = DIR2[6] = DIR3[6] = 1.0;
-
-	for (int i = 0; i < NDS; i++)
-		for (int j = 0; j < 10; j++)
-			A[i][j] = 0.0;
-
-	A[1][1] = A[2][5] = A[3][9] = 1.0;
-	A[4][2] = A[4][4] = 1.0;
-	A[5][6] = A[5][8] = 1.0;
-	A[6][3] = A[6][7] = 1.0;
+	double COR[NODEN][ND];
 
 	for (int i = 0; i < NDLOC; i++)
 		DISLOCATIONF[i] = 0.0;
 
-	for (int III = 1; III < 3; III++)        		// GUASS INTEGRATION LOOP
+	for (int III = 1; III < 3; III++)        		// GAUSS INTEGRATION LOOP
 		for (int JJJ = 1; JJJ < 3; JJJ++)
 			for (int PPP = 1; PPP < 3; PPP++) {
 				if (III == 1)
@@ -306,10 +317,9 @@ void DISLOCATIONFORCE(double XLOC[NODEN], double YLOC[NODEN],
 						SND[i][j] = 0.0;
 
 				for (int j = 1; j < NODEN; j++) {
-					//Order changed to match Abaqus numbering
-					SND[2][j] = (1.0 / 8.0) * DIR1[j] * (1.0 + NEW * DIR2[j])
+					SND[1][j] = (1.0 / 8.0) * DIR1[j] * (1.0 + NEW * DIR2[j])
 							* (1.0 + KSHI * DIR3[j]);
-					SND[1][j] = (1.0 / 8.0) * DIR2[j] * (1.0 + SHI * DIR1[j])
+					SND[2][j] = (1.0 / 8.0) * DIR2[j] * (1.0 + SHI * DIR1[j])
 							* (1.0 + KSHI * DIR3[j]);
 					SND[3][j] = (1.0 / 8.0) * DIR3[j] * (1.0 + NEW * DIR2[j])
 							* (1.0 + SHI * DIR1[j]);
@@ -416,35 +426,13 @@ void DISLOCATIONFORCE(double XLOC[NODEN], double YLOC[NODEN],
 							BBTRANE[i][j] = BBTRANE[i][j]
 									+ BBTRAN[i][k] * EE3D[k][j];
 
-				double Dalpha[NDS], ex[ND], ey[ND], ez[ND];
-				double ext, eyt, ezt;
-
-				ext = eyt = ezt = 0.0;
-
-				ex[1] = 1.0;
-				ex[2] = 0.0;
-				ex[3] = 0.0;
-
-				ey[1] = 0.0;
-				ey[2] = 1.0;
-				ey[3] = 0.0;
-
-				ez[1] = 0.0;
-				ez[2] = 0.0;
-				ez[3] = 1.0;
-
-				for (int i = 1; i < ND; i++) {
-					ext = ext + ex[i] * et[i];
-					eyt = eyt + ey[i] * et[i];
-					ezt = ezt + ez[i] * et[i];
-				}
-
-				Dalpha[1] = bv * ext * GND[1];
-				Dalpha[2] = bv * eyt * GND[2];
-				Dalpha[3] = bv * ezt * GND[3];
-				Dalpha[4] = bv * (eyt * GND[1] + ext * GND[2]);
-				Dalpha[5] = bv * (ezt * GND[2] + eyt * GND[3]);
-				Dalpha[6] = bv * (ext * GND[3] + ezt * GND[1]);
+				double Dalpha[NDS];
+				Dalpha[1] = bv * et[1] * GND[1];
+				Dalpha[2] = bv * et[2] * GND[2];
+				Dalpha[3] = bv * et[3] * GND[3];
+				Dalpha[4] = bv * (et[2] * GND[1] + et[1] * GND[2]);
+				Dalpha[5] = bv * (et[3] * GND[2] + et[2] * GND[3]);
+				Dalpha[6] = bv * (et[1] * GND[3] + et[3] * GND[1]);
 
 				for (int i = 1; i < NDLOC; i++)
 					for (int k = 1; k < NDS; k++)
@@ -452,71 +440,11 @@ void DISLOCATIONFORCE(double XLOC[NODEN], double YLOC[NODEN],
 								+ (BBTRANE[i][k] * Dalpha[k] * Det);
 
 			}
-
-	AssemDislocationForce(IEL);
-
-}
-
-void DISLOCATIONELEMENTFORCE(double XLOC[NODEN], double YLOC[NODEN],
-		double ZLOC[NODEN], int i) {
-
-	if ((Xglob[LOTOGO[8 * i + (1 - 1)]-1] <= 0.0)
-			&& (Xglob[LOTOGO[8 * i + (2 - 1)]-1] <= 0.0)
-			&& (Xglob[LOTOGO[8 * i + (3 - 1)]-1] <= 0.0)
-			&& (Xglob[LOTOGO[8 * i + (4 - 1)]-1] <= 0.0)
-			&& (Xglob[LOTOGO[8 * i + (5 - 1)]-1] <= 0.0)
-			&& (Xglob[LOTOGO[8 * i + (6 - 1)]-1] <= 0.0)
-			&& (Xglob[LOTOGO[8 * i + (7 - 1)]-1] <= 0.0)
-			&& (Xglob[LOTOGO[8 * i + (8 - 1)]-1] <= 0.0)) {
-		bool condition1, condition2;
-
-		condition1 = false;
-		condition2 = false;
-
-		if ((Yglob[LOTOGO[8 * i + (1 - 1)]-1] < 0.0)
-				|| (Yglob[LOTOGO[8 * i + (2 - 1)]-1] < 0.0)
-				|| (Yglob[LOTOGO[8 * i + (3 - 1)]-1] < 0.0)
-				|| (Yglob[LOTOGO[8 * i + (4 - 1)]-1] < 0.0)
-				|| (Yglob[LOTOGO[8 * i + (5 - 1)]-1] < 0.0)
-				|| (Yglob[LOTOGO[8 * i + (6 - 1)]-1] < 0.0)
-				|| (Yglob[LOTOGO[8 * i + (7 - 1)]-1] < 0.0)
-				|| (Yglob[LOTOGO[8 * i + (8 - 1)]-1] < 0.0))
-			condition1 = true;
-
-		if ((Yglob[LOTOGO[8 * i + (1 - 1)]-1] > 0.0)
-				|| (Yglob[LOTOGO[8 * i + (2 - 1)]-1] > 0.0)
-				|| (Yglob[LOTOGO[8 * i + (3 - 1)]-1] > 0.0)
-				|| (Yglob[LOTOGO[8 * i + (4 - 1)]-1] > 0.0)
-				|| (Yglob[LOTOGO[8 * i + (5 - 1)]-1] > 0.0)
-				|| (Yglob[LOTOGO[8 * i + (6 - 1)]-1] > 0.0)
-				|| (Yglob[LOTOGO[8 * i + (7 - 1)]-1] > 0.0)
-				|| (Yglob[LOTOGO[8 * i + (8 - 1)]-1] > 0.0))
-			condition2 = true;
-
-		if (condition1 && condition2) {
-
-			double et[ND];
-
-		
-			et[0] = 0.0;
-			et[1] = 0.0;
-			et[2] = 0.0;
-			et[3] = 1.0;
-
-			for (int j = 1; j < NODEN; j++) {
-				XLOC[j] = Xglob[LOTOGO[8 * i + (j - 1)]-1];
-				YLOC[j] = Yglob[LOTOGO[8 * i + (j - 1)]-1];
-				ZLOC[j] = Zglob[LOTOGO[8 * i + (j - 1)]-1];
-			}
-
-			DISLOCATIONFORCE(XLOC, YLOC, ZLOC, i, bv, et);
-		}
-	}
 }
 
 void STIFF(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN]) {
 
-	double A[NDS][10], B[10][10], C[10][NDLOC];
+	double B[10][10], C[10][NDLOC];
 	double BB[NDS][NDLOC], BBTRAN[NDLOC][NDS];
 
 	double SND[ND][NODEN];
@@ -524,25 +452,7 @@ void STIFF(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN]) {
 	double BBTRANE[NDLOC][NDS], AB[NDS][10];
 
 	double SHI, NEW, KSHI, Det;
-	double DIR1[NODEN], DIR2[NODEN], DIR3[NODEN], COR[NODEN][ND];
-
-	DIR1[1] = DIR2[4] = DIR3[3] = -1.0;
-	DIR1[2] = DIR2[8] = DIR3[4] = -1.0;
-	DIR1[3] = DIR2[3] = DIR3[7] = 1.0;
-	DIR1[4] = DIR2[7] = DIR3[8] = 1.0;
-	DIR1[5] = DIR2[1] = DIR3[2] = -1.0;
-	DIR1[6] = DIR2[5] = DIR3[1] = -1.0;
-	DIR1[7] = DIR2[2] = DIR3[5] = 1.0;
-	DIR1[8] = DIR2[6] = DIR3[6] = 1.0;
-
-	for (int i = 0; i < NDS; i++)
-		for (int j = 0; j < 10; j++)
-			A[i][j] = 0.0;
-
-	A[1][1] = A[2][5] = A[3][9] = 1.0;
-	A[4][2] = A[4][4] = 1.0;
-	A[5][6] = A[5][8] = 1.0;
-	A[6][3] = A[6][7] = 1.0;
+	double COR[NODEN][ND];
 
 	for (int i = 0; i < NDLOC; i++)
 		for (int j = 0; j < NDLOC; j++)
@@ -571,10 +481,9 @@ void STIFF(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN]) {
 						SND[i][j] = 0.0;
 
 				for (int j = 1; j < NODEN; j++) {
-					//Order changed to match Abaqus numbering
-					SND[2][j] = (1.0 / 8.0) * DIR1[j] * (1.0 + NEW * DIR2[j])
+					SND[1][j] = (1.0 / 8.0) * DIR1[j] * (1.0 + NEW * DIR2[j])
 							* (1.0 + KSHI * DIR3[j]);
-					SND[1][j] = (1.0 / 8.0) * DIR2[j] * (1.0 + SHI * DIR1[j])
+					SND[2][j] = (1.0 / 8.0) * DIR2[j] * (1.0 + SHI * DIR1[j])
 							* (1.0 + KSHI * DIR3[j]);
 					SND[3][j] = (1.0 / 8.0) * DIR3[j] * (1.0 + NEW * DIR2[j])
 							* (1.0 + SHI * DIR1[j]);
@@ -673,48 +582,23 @@ void STIFF(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN]) {
 }
 
 
-void STRESS(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN],
+void calc_stress(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN],
 		int IEL) {
 
-	double A[NDS][10], B[10][10], C[10][NDLOC];
+	double B[10][10], C[10][NDLOC];
 	double BB[NDS][NDLOC], BBTRAN[NDLOC][NDS];
 	double SND[ND][NODEN];
 
 	double BBTRANE[NDLOC][NDS], AB[NDS][10];
 
 	double SHI, NEW, KSHI, Det;
-	double DIR1[NODEN], DIR2[NODEN], DIR3[NODEN], COR[NODEN][ND];
-	double AvgStr1, AvgStr2, AvgStr3;
-	
-	bool condition1, condition2;
+	double COR[NODEN][ND];
+	double AvgStress[6], AvgStrain[6];
 
-	DIR1[1] = DIR2[4] = DIR3[3] = -1.0;
-	DIR1[2] = DIR2[8] = DIR3[4] = -1.0;
-	DIR1[3] = DIR2[3] = DIR3[7] = 1.0;
-	DIR1[4] = DIR2[7] = DIR3[8] = 1.0;
-	DIR1[5] = DIR2[1] = DIR3[2] = -1.0;
-	DIR1[6] = DIR2[5] = DIR3[1] = -1.0;
-	DIR1[7] = DIR2[2] = DIR3[5] = 1.0;
-	DIR1[8] = DIR2[6] = DIR3[6] = 1.0;
-
-	for (int i = 0; i < NDS; i++)
-		for (int j = 0; j < 10; j++)
-			A[i][j] = 0.0;
-
-	A[1][1] = A[2][5] = A[3][9] = 1.0;
-	A[4][2] = A[4][4] = 1.0;
-	A[5][6] = A[5][8] = 1.0;
-	A[6][3] = A[6][7] = 1.0;
-
-	/*for (int i = 0; i < NDLOC; i++)
-		for (int j = 0; j < NDLOC; j++)
-			AKLOC[i][j] = 0.0;*/
-
-	AvgStr1 = 0.0;
-	AvgStr2 = 0.0;
-	AvgStr3 = 0.0;
-
-	//cout << "RESULTS FOR ELEMENT#: " << IEL << endl;
+	for (int i = 0; i < 6; ++i) {
+        	AvgStress[i] = 0.0;
+        	AvgStrain[i] = 0.0;
+	}
 
 	for (int III = 1; III < 3; III++)        		// GAUSS INTEGRATION LOOP
 		for (int JJJ = 1; JJJ < 3; JJJ++)
@@ -739,10 +623,9 @@ void STRESS(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN],
 						SND[i][j] = 0.0;
 
 				for (int j = 1; j < NODEN; j++) {
-					//Order changed to match Abaqus numbering
-					SND[2][j] = (1.0 / 8.0) * DIR1[j] * (1.0 + NEW * DIR2[j])
+					SND[1][j] = (1.0 / 8.0) * DIR1[j] * (1.0 + NEW * DIR2[j])
 							* (1.0 + KSHI * DIR3[j]);
-					SND[1][j] = (1.0 / 8.0) * DIR2[j] * (1.0 + SHI * DIR1[j])
+					SND[2][j] = (1.0 / 8.0) * DIR2[j] * (1.0 + SHI * DIR1[j])
 							* (1.0 + KSHI * DIR3[j]);
 					SND[3][j] = (1.0 / 8.0) * DIR3[j] * (1.0 + NEW * DIR2[j])
 							* (1.0 + SHI * DIR1[j]);
@@ -823,7 +706,7 @@ void STRESS(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN],
 					for (int jjk = 1; jjk < ND; jjk++) {
 					    iicon = JJglob[3 * LOTOGO[8 * IEL + (j - 1)] + (jjk - 1)]; 
 						if (iicon < 0)
-							DIS[j][jjk] = 0.0;  // ??? constraint value?
+							DIS[j][jjk] = 0.0;
 						else
 							DIS[j][jjk] = Dglob[iicon];
 					}
@@ -849,43 +732,11 @@ void STRESS(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN],
 				}
 
                  int i = IEL;
-	        
 
-        if ((Xglob[LOTOGO[8 * i + (1 - 1)]-1] <= 0.0)
-			&& (Xglob[LOTOGO[8 * i + (2 - 1)]-1] <= 0.0)
-			&& (Xglob[LOTOGO[8 * i + (3 - 1)]-1] <= 0.0)
-			&& (Xglob[LOTOGO[8 * i + (4 - 1)]-1] <= 0.0)
-			&& (Xglob[LOTOGO[8 * i + (5 - 1)]-1] <= 0.0)
-			&& (Xglob[LOTOGO[8 * i + (6 - 1)]-1] <= 0.0)
-			&& (Xglob[LOTOGO[8 * i + (7 - 1)]-1] <= 0.0)
-			&& (Xglob[LOTOGO[8 * i + (8 - 1)]-1] <= 0.0)) {
-
-		condition1 = false;
-		condition2 = false;
-
-		if ((Yglob[LOTOGO[8 * i + (1 - 1)]-1] < 0.0)
-				|| (Yglob[LOTOGO[8 * i + (2 - 1)]-1] < 0.0)
-				|| (Yglob[LOTOGO[8 * i + (3 - 1)]-1] < 0.0)
-				|| (Yglob[LOTOGO[8 * i + (4 - 1)]-1] < 0.0)
-				|| (Yglob[LOTOGO[8 * i + (5 - 1)]-1] < 0.0)
-				|| (Yglob[LOTOGO[8 * i + (6 - 1)]-1] < 0.0)
-				|| (Yglob[LOTOGO[8 * i + (7 - 1)]-1] < 0.0)
-				|| (Yglob[LOTOGO[8 * i + (8 - 1)]-1] < 0.0))
-			condition1 = true;
-
-		if ((Yglob[LOTOGO[8 * i + (1 - 1)]-1] > 0.0)
-				|| (Yglob[LOTOGO[8 * i + (2 - 1)]-1] > 0.0)
-				|| (Yglob[LOTOGO[8 * i + (3 - 1)]-1] > 0.0)
-				|| (Yglob[LOTOGO[8 * i + (4 - 1)]-1] > 0.0)
-				|| (Yglob[LOTOGO[8 * i + (5 - 1)]-1] > 0.0)
-				|| (Yglob[LOTOGO[8 * i + (6 - 1)]-1] > 0.0)
-				|| (Yglob[LOTOGO[8 * i + (7 - 1)]-1] > 0.0)
-				|| (Yglob[LOTOGO[8 * i + (8 - 1)]-1] > 0.0))
-			condition2 = true;
-
-		if (condition1 && condition2) {
+		if (augmented_element(i)) {
                         
 			for (int j = 1; j < NODEN; j++){
+			    /* Should be done for all DOF, bv should be vector */
                 if (Yglob[LOTOGO[8 * i + (j - 1)]-1] > 0)
 					DP[3 * j] = DP[3 * j] - 0.5 * bv;
                 else
@@ -893,7 +744,7 @@ void STRESS(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN],
 				}
                         
         }
-	    }
+	    
 
 
 				for (int i = 1; i < NDS; i++)
@@ -908,14 +759,16 @@ void STRESS(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN],
 					for (int k = 1; k < NDS; k++)
 						STR[i] = STR[i] + EE3D[i][k] * BBDP[k];
 
-				AvgStr1 = AvgStr1 + 0.125 * STR[1];
-				AvgStr2 = AvgStr2 + 0.125 * STR[5];
-				AvgStr3 = AvgStr3 + 0.125 * STR[6];
+				for (int i = 0; i < 6; ++i) {
+        				AvgStress[i] += 0.125 * STR[i+1];
+        				AvgStrain[i] += 0.125 * BBDP[i+1];
+				}
 			}
 
-    sigma[0] = AvgStr1;
-    sigma[1] = AvgStr2;
-    sigma[2] = AvgStr3;
+    for (int i = 0; i < 6; ++i) {
+        stress[i] = AvgStress[i];
+        strain[i] = AvgStrain[i];
+    }
 
 }
 
@@ -1228,19 +1081,23 @@ void update_fglob() {
 
 	for (int IEL = 0; IEL < NEL; IEL++) {
 		for (int j = 0; j < 8; j++) {
-			XLOC[j+1] = Xglob[LOTOGO[8 * IEL + j] - 1];
-			YLOC[j+1] = Yglob[LOTOGO[8 * IEL + j] - 1];
-			ZLOC[j+1] = Zglob[LOTOGO[8 * IEL + j] - 1];
+			XLOC[j+1] = Xglob[LOTOGO[8*IEL + j] - 1];
+			YLOC[j+1] = Yglob[LOTOGO[8*IEL + j] - 1];
+			ZLOC[j+1] = Zglob[LOTOGO[8*IEL + j] - 1];
 		}
 
 		ENFORCEDFORCE(XLOC, YLOC, ZLOC, IEL);
 		Assem_force(IEL);
-		DISLOCATIONELEMENTFORCE(XLOC, YLOC, ZLOC, IEL);
+		//DISLOCATIONELEMENTFORCE(XLOC, YLOC, ZLOC, et, IEL);
+		if (augmented_element(IEL)){
+		    DISLOCATIONFORCE(XLOC, YLOC, ZLOC, IEL);
+		    AssemDislocationForce(IEL);
+		}
 	}
 }
 
 void create_xfem_dis() {
-    /* create BC for Volterra dislocation on constraint nodes
+    /* create BC for Volterra screw dislocation on constraint nodes
     
     Parameters:
 
@@ -1280,5 +1137,24 @@ void apply_e23_outer(double e23) {
 		//ENFRDISPglob[3*inode    ] += 0.0;
 		//ENFRDISPglob[3*inode + 1] += 0.0;
 		ENFRDISPglob[3*inode + 2] += yc * e23;
+	}
+}
+
+void apply_e12_outer(double e12) {
+    /* apply given xy-strain component as displacement bc to outer nodes
+    
+    Parameters:
+    e23 : double
+        yz-shear strain
+    */
+    int i, inode;
+    double yc;
+    
+    for (i = 0; i < NENFD; i++) {
+		inode = ncstr_o[i];
+		yc = Yglob[inode-1];
+		ENFRDISPglob[3*inode] += yc * e12;
+		//ENFRDISPglob[3*inode + 1] += 0.0;
+		//ENFRDISPglob[3*inode + 2] += yc * e23;
 	}
 }

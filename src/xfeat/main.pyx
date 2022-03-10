@@ -10,7 +10,6 @@ Created on Sun Feb  6 17:46:17 2022
 import os
 import time
 import numpy as np
-import matplotlib.pyplot as plt
 import pyvista as pv
 from vtk import VTK_HEXAHEDRON
 from scipy.sparse import csr_matrix
@@ -38,6 +37,7 @@ class Model(object):
         self.JJglob = None  # Pointer to equation number from full nodal DOF
         self.u = None  # nodal displacements in dense notation
         self.xdof = None  # number of xtended degrees of freedom
+        self.update_stress = True
         
         self.mat = mat
         self. lp = self.mat['lp']  # lattice parameter
@@ -72,8 +72,43 @@ class Model(object):
                                .format(self.md_dir))
         tdir = self.temp.encode()
         xfc.temp_dir = tdir
+        
+        # set global constants
         xfc.fem_size = self.fem_size
         xfc.PI = np.pi
+        
+        DIR1 = np.zeros(9, dtype=np.double)
+        DIR2 = np.zeros(9, dtype=np.double)
+        DIR3 = np.zeros(9, dtype=np.double)
+        DIR1[1] = DIR2[4] = DIR3[3] = -1.0
+        DIR1[2] = DIR2[8] = DIR3[4] = -1.0
+        DIR1[3] = DIR2[3] = DIR3[7] = 1.0
+        DIR1[4] = DIR2[7] = DIR3[8] = 1.0
+        DIR1[5] = DIR2[1] = DIR3[2] = -1.0
+        DIR1[6] = DIR2[5] = DIR3[1] = -1.0
+        DIR1[7] = DIR2[2] = DIR3[5] = 1.0
+        DIR1[8] = DIR2[6] = DIR3[6] = 1.0
+        xfc.DIR1 = DIR1
+        xfc.DIR2 = DIR2
+        xfc.DIR3 = DIR3
+	    	    
+        A = np.zeros((7, 10), dtype=np.double)
+        A[1][1] = A[2][5] = A[3][9] = 1.0
+        A[4][2] = A[4][4] = 1.0
+        A[5][6] = A[5][8] = 1.0
+        A[6][3] = A[6][7] = 1.0
+        xfc.A = A
+        
+        et = np.zeros(4, dtype=np.double)
+        et[3] = 1.0
+        xfc.et = et
+        
+        # set global parameters for pyVista
+        pv.global_theme.font.title_size = 24
+        pv.global_theme.font.label_size = 20
+        self.e_names = ['eps_xx', 'eps_yy', 'eps_zz', 'eps_yz', 'eps_xy', 'eps_xz']
+        self.s_names = ['sig_xx', 'sig_yy', 'sig_zz', 'sig_yz', 'sig_xy', 'sig_xz']
+        self.comps = ['xx', 'yy', 'zz', 'yz', 'xz', 'xy']
         
     def atoms(self):
         '''
@@ -290,6 +325,7 @@ class Model(object):
         self.grid.point_data['ubc_x'] = self.ubc[0::3]
         self.grid.point_data['ubc_y'] = self.ubc[1::3]
         self.grid.point_data['ubc_z'] = self.ubc[2::3]
+        self.update_stress = True
         return
     
     def init_dislo(self):
@@ -430,9 +466,7 @@ class Model(object):
         self.grid.point_data['ubc_z'] = self.ubc[2::3]
         self.solve()
         self.shift_atoms()
-        
-        
-    
+
     def calc_stress(self):
         '''
         Evaluate element stresses.
@@ -443,24 +477,26 @@ class Model(object):
             Components of stress field in each element
 
         '''
-        cdef int IEL, j
-        cdef double XLOC[9]
-        cdef double YLOC[9]
-        cdef double ZLOC[9]
-        XLOC[0] = 0.0
-        YLOC[0] = 0.0
-        ZLOC[0] = 0.0
-        s_field = np.zeros((self.NEL, 3), dtype=np.double)
-        for IEL in range(self.NEL):
+        cdef double xloc[9], yloc[9], zloc[9]
+        cdef int iel, j
+        xloc = np.zeros(9, dtype=np.double)
+        yloc = np.zeros(9, dtype=np.double)
+        zloc = np.zeros(9, dtype=np.double)
+        s_field = np.zeros((self.NEL, 6), dtype=np.double)
+        e_field = np.zeros((self.NEL, 6), dtype=np.double)
+        for iel in range(self.NEL):
             for j in range(8):
-                XLOC[j+1] = self.nodes[self.elmts[IEL, j], 0]
-                YLOC[j+1] = self.nodes[self.elmts[IEL, j], 1]
-                ZLOC[j+1] = self.nodes[self.elmts[IEL, j], 2]
-            xfc.STRESS(XLOC, YLOC, ZLOC, IEL)
-            s_field[IEL,:] = xfc.sigma
-        self.grid.cell_data['sig_xy'] = s_field[:, 0]
-        self.grid.cell_data['sig_xz'] = s_field[:, 1]
-        self.grid.cell_data['sig_yz'] = s_field[:, 2]
+                xloc[j+1] = self.nodes[self.elmts[iel, j], 0]
+                yloc[j+1] = self.nodes[self.elmts[iel, j], 1]
+                zloc[j+1] = self.nodes[self.elmts[iel, j], 2]
+            xfc.calc_stress(xloc, yloc, zloc, iel)
+            s_field[iel,:] = xfc.stress
+            e_field[iel,:] = xfc.strain
+        s_field /= 0.0062417  # convert from eV/A^3 into GPa
+        for i in range(6):
+            self.grid.cell_data[self.s_names[i]] = s_field[:, i]
+            self.grid.cell_data[self.e_names[i]] = e_field[:, i]
+        self.update_stress = False
         return s_field
         
             
@@ -492,19 +528,19 @@ class Model(object):
             
         # select quantity to be plotted
         if tag == 'ubc':
-            title = r'BC $u_{}$ (A)'.format(comp)
+            title = r'BC u_{} (A)'.format(comp)
             sc = 'ubc_{}'.format(comp)
         elif tag == 'u':
-            title = r'$u_{}$ (A)'.format(comp)
+            title = r'u_{} (A)'.format(comp)
             sc = 'u_{}'.format(comp)
         elif tag == 'f':
-            title = r'$f_{}$ (10$^{}$N)'.format(comp, r'{-11}')
+            title = r'f_{} (1e-11 N)'.format(comp)
             sc = 'f_{}'.format(comp)
         else:
             raise ValueError('Unknown value for parameter tag: {}')
         
         pl = pv.Plotter()
-        pl.camera_position = (1.0, 0.0, 2*self.fem_size)
+        pl.camera_position = (1.0, 0.0, 2.1*self.fem_size)
         pl.camera.azimuth = 270
         self.grid.set_active_scalars(sc)
         umin = np.amin(self.grid.active_scalars)
@@ -522,28 +558,24 @@ class Model(object):
         pl.show()
         return
         
-    def plot_el(self, tag, comp='yz', sig=None):
+    def plot_el(self, tag, comp='yz'):
         tag = tag.lower()
         comp = comp.lower()
-        if tag[-2:] == 'yz' or tag[-2:] == 'xz' or tag[-2:] == 'xy':
+        if tag[-2:] in self.comps:
             comp = tag[-2:]
             tag = tag[0:-2]
-        if tag != 'sig':
-            raise ValueError('Only stresses defined on elements.')
+        if tag != 'sig' and tag != 'eps':
+            raise ValueError('Value for parameter "tag" not valid: {}. Must be eiter "sig" or "eps".'
+                             .format(tag))
             
-        if comp == 'yz':
-            sc = 'sig_yz'
-            title = r'$\sigma_{yz} (GPa)$'
-        elif comp == 'xy':
-            sc = 'sig_xy'
-            title = r'$\sigma_{xy} (GPa)$'
-        elif comp == 'xz':
-            sc = 'sig_xz'
-            title = r'$\sigma_{xz} (GPa)$'
-        else:
-            raise ValueError('Value for parameter comp not valid: {}'
+        if not comp in self.comps:
+            raise ValueError('Value for parameter "comp" not valid: {}'
                              .format(comp))
-        if sig is None:
+        sc = '{}_{}'.format(tag, comp)
+        title = '{}_{}'.format(tag, comp)
+        if tag == 'sig':
+            title += ' (GPa)'
+        if self.update_stress:
             sig = self.calc_stress()  # evaluate element stresses
 
         self.grid.set_active_scalars(sc)
@@ -556,16 +588,16 @@ class Model(object):
         tag = tag.lower()
         if tag == 'epot':
             sc = 'epot'
-            title = r'$E_{pot}$ (eV)'
+            title = r'Epot (eV)'
         elif tag == 'uz' or tag == 'dispz':
             sc = 'u_z'
-            title = r'$u_z$ (A)'
+            title = r'u_z (A)'
         elif tag == 'uy' or tag == 'dispy':
             sc = 'u_y'
-            title = r'$u_y$ (A)'
+            title = r'u_y (A)'
         elif tag == 'ux' or tag == 'dispx':
             sc = 'u_x'
-            title = r'$u_x$ (A)'
+            title = r'u_x (A)'
         else:
             raise ValueError('Unknown value in parameter tag: {}'.format(tag))
             
@@ -585,19 +617,25 @@ class Model(object):
                     scalar_bar_args=dict(vertical=True, position_y=0.25,
                                  title=title))
 
-    def plot(self, tag, deformed=None):
+    def plot(self, tag, atoms=None, deformed=None):
         tag = tag.lower()
+        if atoms is None:
+            atoms = True
         if tag == 'epot':
             self.plot_at(tag, deformed=deformed)
         elif tag == 'uz' or tag == 'uy' or tag == 'ux':
-            self.plot_nodal(tag, deformed=deformed)
+            self.plot_nodal(tag, atoms=atoms, deformed=deformed)
         elif tag == 'fz' or tag == 'fy' or tag == 'fx':
-            self.plot_nodal(tag, deformed=deformed)
+            self.plot_nodal(tag, atoms=atoms, deformed=deformed)
         elif tag == 'ubcz' or tag == 'ubcy' or tag == 'ubcx':
-            self.plot_nodal(tag, deformed=deformed)
+            self.plot_nodal(tag, atoms=atoms, deformed=deformed)
         elif tag == 'dispx' or tag == 'dispy' or tag == 'dispz':
             self.plot_at(tag, deformed=deformed)
-        elif tag == 'sigxy' or tag == 'sigxz' or tag == 'sigyz':
+        elif tag == 'sigxx' or tag == 'sigyy' or tag == 'sigzz' or\
+             tag == 'sigxy' or tag == 'sigxz' or tag == 'sigyz':
             self.plot_el(tag='sig', comp=tag[-2:])
+        elif tag == 'epsxx' or tag == 'epsyy' or tag == 'epszz' or\
+             tag == 'epsxy' or tag == 'epsxz' or tag == 'epsyz':
+            self.plot_el(tag='eps', comp=tag[-2:])
         else:
             raise ValueError('Unknown value in parameter tag.')

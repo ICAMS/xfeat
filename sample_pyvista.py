@@ -34,14 +34,17 @@ mod = xfeat.Model(mat, size=200)
 mod.atoms()
 mod.mesh()
 mod.init_dislo()
-mod.grid.plot(show_edges=True)
+#mod.plot('ubcz')
 # iterate into equilibrium configuration
 for i in range(1):
     mod.atom_bc()  # apply relaxed atom positions as BC to XFEM 
     mod.solve()  # colculate nodal displacements for mechanical equilibrium
     mod.shift_atoms()  # move boundary atoms according to strain field
     mod.relax_atoms(i)  # relax atomic structure with fixed boundary atoms
+    #mod.plot('ux')
 
-sig0 = mod.calc_stress()
-mod.grid.cell_data['sig_23'] = sig0[:, 2]
-mod.grid.plot(cpos='xy', show_edges=True)
+#mod.plot('sigyz')
+#mod.plot('uz')
+#mod.plot('dispz')
+#mod.plot('epot')
+

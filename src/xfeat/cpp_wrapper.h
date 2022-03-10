@@ -31,8 +31,12 @@ int NNODE, NLAG, NEL, NDF, xdof;
 int nelem_full_big_box_x;
 int nelem_full_big_box_y;
 int nelem_full_big_box_z;
+double DIR1[NODEN], DIR2[NODEN], DIR3[NODEN];
+double A[NDS][10];
+double et[ND];
 double Lx, Ly, Lz;
-double sigma[3];
+double stress[6];
+double strain[6];
 std::vector<int> Iglob;
 std::vector<int> Jglob;
 std::vector<int> JJglob;
@@ -59,7 +63,7 @@ void create_atom_dis();
 void nodal_displacement();
 void create_xfem_dis();
 void apply_e23_outer(double e23);
-void STRESS(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN], int IEL);
+void calc_stress(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN], int IEL);
 
 // other global variables
 int NCF, NENFD, NCONT;
