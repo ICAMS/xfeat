@@ -99,6 +99,9 @@ double AKLOC[NDLOC][NDLOC]; //Local stiffness matrix
 double ENFLOC[NDLOC];
 double STR[NDS];
 double DISLOCATIONF[NDLOC];
+double BB[NDS][NDLOC];
+double BBTRANE[NDLOC][NDS];
+double GND[ND];
 
 std::vector<int> NODE;
 std::vector<int> ContraintNodes;  // nodes with Lagrange constraints along slip plane

@@ -94,6 +94,114 @@ double JacInv() {
 	return Det;
 }
 
+double calc_matrices(double SHI, double NEW, double KSHI, double COR[NODEN][ND]) {
+    /* Calculate BB, BBTRANE and GND
+    
+    Returns
+    Det
+    
+    */
+    double B[10][10], AB[NDS][10], C[10][NDLOC];
+	double SND[ND][NODEN];
+	double Det, H;
+         
+    for (int i = 0; i < ND; i++)
+        for (int j = 0; j < NODEN; j++)
+            SND[i][j] = 0.0;
+            
+    for (int i = 0; i < ND; i++){
+        GND[i] = 0.0;
+        for (int j = 0; j < ND; j++) {
+            Ajac[i][j] = 0.0;
+            AjacInv[i][j] = 0.0;
+        }
+    }
+
+    for (int j = 1; j < NODEN; j++) {
+        SND[1][j] = (1.0 / 8.0) * DIR1[j] * (1.0 + NEW * DIR2[j])
+                * (1.0 + KSHI * DIR3[j]);
+        SND[2][j] = (1.0 / 8.0) * DIR2[j] * (1.0 + SHI * DIR1[j])
+                * (1.0 + KSHI * DIR3[j]);
+        SND[3][j] = (1.0 / 8.0) * DIR3[j] * (1.0 + NEW * DIR2[j])
+                * (1.0 + SHI * DIR1[j]);
+    }
+
+    for (int i = 1; i < ND; i++)
+        for (int j = 1; j < ND; j++)
+            for (int k = 1; k < NODEN; k++)
+                Ajac[i][j] += SND[i][k] * COR[k][j];
+
+    Det = JacInv();
+    
+    for (int node = 1; node < NODEN; node++) {
+        for (int i = 1; i < ND; i++)
+            for (int j = 1; j < ND; j++) {
+                if (COR[node][2] < 0.0)
+                    H = -0.5;
+                else
+                    H = 0.5;
+                GND[i] += AjacInv[i][j] * SND[j][node] * H;
+            }
+    }
+				
+    for (int i = 0; i < 10; i++)
+        for (int j = 0; j < 10; j++)
+            B[i][j] = 0.0;
+
+    for (int j = 1; j < ND; j++)
+        for (int l = 1; l < ND; l++) {
+            B[j][l] = AjacInv[j][l];
+            B[j + 3][l + 3] = AjacInv[j][l];
+            B[j + 6][l + 6] = AjacInv[j][l];
+        }
+
+    for (int i = 0; i < 10; i++)
+        for (int j = 0; j < NDLOC; j++)
+            C[i][j] = 0.0;
+
+    for (int i = 1; i < 4; i++)
+        for (int j = 1; j < 24; j = j + 3)
+            C[i][j] = SND[i][(j + 2) / 3];
+
+    for (int i = 4; i < 7; i++)
+        for (int j = 2; j < 24; j = j + 3)
+            C[i][j] = SND[i - 3][(j + 1) / 3];
+
+    for (int i = 7; i < 10; i++)
+        for (int j = 3; j < 25; j = j + 3)
+            C[i][j] = SND[i - 6][j / 3];
+
+    for (int i = 0; i < NDS; i++)
+        for (int j = 0; j < 10; j++)
+            AB[i][j] = 0.0;
+
+    for (int i = 1; i < NDS; i++)
+        for (int j = 1; j < 10; j++)
+            for (int k = 1; k < 10; k++)
+                AB[i][j] += A[i][k] * B[k][j];
+
+    for (int i = 0; i < NDS; i++)
+        for (int j = 0; j < NDLOC; j++)
+            BB[i][j] = 0.0;
+
+    for (int i = 1; i < NDS; i++)
+        for (int j = 1; j < NDLOC; j++)
+            for (int k = 1; k < 10; k++)
+                BB[i][j] += AB[i][k] * C[k][j];
+
+    for (int i = 0; i < NDLOC; i++)
+        for (int j = 0; j < NDS; j++) {
+            BBTRANE[i][j] = 0.0;
+        }
+
+    for (int i = 1; i < NDLOC; i++)
+        for (int j = 1; j < NDS; j++)
+            for (int k = 1; k < NDS; k++)
+                BBTRANE[i][j] += BB[k][i] * EE3D[k][j];
+                
+    return Det;
+}
+
 void Assem_force(int Iel) {
 	int i, icon, iicon, ii, iii;
 
@@ -125,135 +233,31 @@ void AssemDislocationForce(int Iel) {
 void ENFORCEDFORCE(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN],
 		int IEL) {
 
-	double B[10][10], C[10][NDLOC];
-	double BB[NDS][NDLOC], BBTRAN[NDLOC][NDS];
-
-	double SND[ND][NODEN];
-
-	double BBTRANE[NDLOC][NDS], AB[NDS][10];
-
-	double SHI, NEW, KSHI, Det;
+	double SHI, NEW, KSHI, Det, sqrt_3;
+	double ENDP[NDLOC], BBENDP[NDS];
 	double COR[NODEN][ND];
+	
+	sqrt_3 = 1.0/sqrt(3.0);
 
 	for (int i = 0; i < NDLOC; i++)
 		ENFLOC[i] = 0.0;
+		
+	for (int i = 0; i < NODEN; i++) {
+	    COR[i][0] = 0.0;
+        COR[i][1] = XLOC[i];
+        COR[i][2] = YLOC[i];
+        COR[i][3] = ZLOC[i];
+    }
 
 	for (int III = 1; III < 3; III++)        		// GAUSS INTEGRATION LOOP
 		for (int JJJ = 1; JJJ < 3; JJJ++)
 			for (int PPP = 1; PPP < 3; PPP++) {
-				if (III == 1)
-					SHI = -0.577350269189626;
-				if (III == 2)
-					SHI = 0.577350269189626;
 
-				if (JJJ == 1)
-					NEW = -0.577350269189626;
-				if (JJJ == 2)
-					NEW = 0.577350269189626;
-
-				if (PPP == 1)
-					KSHI = -0.577350269189626;
-				if (PPP == 2)
-					KSHI = 0.577350269189626;
-
-				for (int i = 0; i < ND; i++)
-					for (int j = 0; j < NODEN; j++)
-						SND[i][j] = 0.0;
-
-				for (int j = 1; j < NODEN; j++) {
-					SND[1][j] = (1.0 / 8.0) * DIR1[j] * (1.0 + NEW * DIR2[j])
-							* (1.0 + KSHI * DIR3[j]);
-					SND[2][j] = (1.0 / 8.0) * DIR2[j] * (1.0 + SHI * DIR1[j])
-							* (1.0 + KSHI * DIR3[j]);
-					SND[3][j] = (1.0 / 8.0) * DIR3[j] * (1.0 + NEW * DIR2[j])
-							* (1.0 + SHI * DIR1[j]);
-				}
-
-				for (int i = 0; i < NODEN; i++)
-					for (int j = 0; j < ND; j++)
-						COR[i][j] = 0.0;
-
-				for (int i = 1; i < NODEN; i++) {
-					COR[i][1] = XLOC[i];
-					COR[i][2] = YLOC[i];
-					COR[i][3] = ZLOC[i];
-				}
-
-				for (int i = 0; i < ND; i++)
-					for (int j = 0; j < ND; j++) {
-						Ajac[i][j] = 0.0;
-						AjacInv[i][j] = 0.0;
-					}
-
-				for (int i = 1; i < ND; i++)
-					for (int j = 1; j < ND; j++)
-						for (int k = 1; k < NODEN; k++)
-							Ajac[i][j] = Ajac[i][j] + SND[i][k] * COR[k][j];
-
-				Det = JacInv();
-
-				for (int i = 0; i < 10; i++)
-					for (int j = 0; j < 10; j++)
-						B[i][j] = 0.0;
-
-				for (int j = 1; j < ND; j++)
-					for (int l = 1; l < ND; l++) {
-						B[j][l] = AjacInv[j][l];
-						B[j + 3][l + 3] = AjacInv[j][l];
-						B[j + 6][l + 6] = AjacInv[j][l];
-					}
-
-				for (int i = 0; i < 10; i++)
-					for (int j = 0; j < NDLOC; j++)
-						C[i][j] = 0.0;
-
-				for (int i = 1; i < 4; i++)
-					for (int j = 1; j < 24; j = j + 3)
-						C[i][j] = SND[i][(j + 2) / 3];
-
-				for (int i = 4; i < 7; i++)
-					for (int j = 2; j < 24; j = j + 3)
-						C[i][j] = SND[i - 3][(j + 1) / 3];
-
-				for (int i = 7; i < 10; i++)
-					for (int j = 3; j < 25; j = j + 3)
-						C[i][j] = SND[i - 6][j / 3];
-
-				for (int i = 0; i < NDS; i++)
-					for (int j = 0; j < 10; j++)
-						AB[i][j] = 0.0;
-
-				for (int i = 1; i < NDS; i++)
-					for (int j = 1; j < 10; j++)
-						for (int k = 1; k < 10; k++)
-							AB[i][j] = AB[i][j] + A[i][k] * B[k][j];
-
-				for (int i = 0; i < NDS; i++)
-					for (int j = 0; j < NDLOC; j++)
-						BB[i][j] = 0.0;
-
-				for (int i = 1; i < NDS; i++)
-					for (int j = 1; j < NDLOC; j++)
-						for (int k = 1; k < 10; k++)
-							BB[i][j] = BB[i][j] + AB[i][k] * C[k][j];
-
-				for (int i = 0; i < NDLOC; i++)
-					for (int j = 0; j < NDS; j++) {
-						BBTRAN[i][j] = 0.0;
-						BBTRANE[i][j] = 0.0;
-					}
-
-				for (int i = 1; i < NDS; i++)
-					for (int j = 1; j < NDLOC; j++)
-						BBTRAN[j][i] = BB[i][j];
-
-				for (int i = 1; i < NDLOC; i++)
-					for (int j = 1; j < NDS; j++)
-						for (int k = 1; k < NDS; k++)
-							BBTRANE[i][j] = BBTRANE[i][j]
-									+ BBTRAN[i][k] * EE3D[k][j];
-
-				double ENDP[NDLOC], BBENDP[NDS];
+                SHI  = sqrt_3 * pow(-1.0, III);
+                NEW  = sqrt_3 * pow(-1.0, JJJ);
+                KSHI = sqrt_3 * pow(-1.0, PPP);
+                
+                Det = calc_matrices(SHI, NEW, KSHI, COR);
 
 				for (int i = 1; i < NODEN; i++) {
 					ENDP[(3 * i - 2)] = ENFRDISPglob[3
@@ -281,152 +285,30 @@ void ENFORCEDFORCE(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN],
 void DISLOCATIONFORCE(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN],
                       int IEL) {
 
-	double B[10][10], C[10][NDLOC];
-	double BB[NDS][NDLOC], BBTRAN[NDLOC][NDS];
-
-	double SND[ND][NODEN];
-
-	double BBTRANE[NDLOC][NDS], AB[NDS][10];
-
-	double SHI, NEW, KSHI, Det;
+	double SHI, NEW, KSHI, Det, sqrt_3;
 	double COR[NODEN][ND];
+	double Dalpha[NDS];
 
+    sqrt_3 = 1.0/sqrt(3.0);
 	for (int i = 0; i < NDLOC; i++)
 		DISLOCATIONF[i] = 0.0;
+
+	for (int i = 0; i < NODEN; i++) {
+	    COR[i][0] = 0.0;
+        COR[i][1] = XLOC[i];
+        COR[i][2] = YLOC[i];
+        COR[i][3] = ZLOC[i];
+    }
 
 	for (int III = 1; III < 3; III++)        		// GAUSS INTEGRATION LOOP
 		for (int JJJ = 1; JJJ < 3; JJJ++)
 			for (int PPP = 1; PPP < 3; PPP++) {
-				if (III == 1)
-					SHI = -0.577350269189626;
-				if (III == 2)
-					SHI = 0.577350269189626;
+				SHI  = sqrt_3 * pow(-1.0, III);
+                NEW  = sqrt_3 * pow(-1.0, JJJ);
+                KSHI = sqrt_3 * pow(-1.0, PPP);
+                
+                Det = calc_matrices(SHI, NEW, KSHI, COR);
 
-				if (JJJ == 1)
-					NEW = -0.577350269189626;
-				if (JJJ == 2)
-					NEW = 0.577350269189626;
-
-				if (PPP == 1)
-					KSHI = -0.577350269189626;
-				if (PPP == 2)
-					KSHI = 0.577350269189626;
-
-				for (int i = 0; i < ND; i++)
-					for (int j = 0; j < NODEN; j++)
-						SND[i][j] = 0.0;
-
-				for (int j = 1; j < NODEN; j++) {
-					SND[1][j] = (1.0 / 8.0) * DIR1[j] * (1.0 + NEW * DIR2[j])
-							* (1.0 + KSHI * DIR3[j]);
-					SND[2][j] = (1.0 / 8.0) * DIR2[j] * (1.0 + SHI * DIR1[j])
-							* (1.0 + KSHI * DIR3[j]);
-					SND[3][j] = (1.0 / 8.0) * DIR3[j] * (1.0 + NEW * DIR2[j])
-							* (1.0 + SHI * DIR1[j]);
-				}
-
-				for (int i = 0; i < NODEN; i++)
-					for (int j = 0; j < ND; j++)
-						COR[i][j] = 0.0;
-
-				for (int i = 1; i < NODEN; i++) {
-					COR[i][1] = XLOC[i];
-					COR[i][2] = YLOC[i];
-					COR[i][3] = ZLOC[i];
-				}
-
-				for (int i = 0; i < ND; i++)
-					for (int j = 0; j < ND; j++) {
-						Ajac[i][j] = 0.0;
-						AjacInv[i][j] = 0.0;
-					}
-
-				for (int i = 1; i < ND; i++)
-					for (int j = 1; j < ND; j++)
-						for (int k = 1; k < NODEN; k++)
-							Ajac[i][j] = Ajac[i][j] + SND[i][k] * COR[k][j];
-
-				Det = JacInv();
-
-				double GND[ND], H;
-
-				for (int i = 0; i < ND; i++)
-					GND[i] = 0.0;
-
-				for (int node = 1; node < NODEN; node++) {
-					for (int i = 1; i < ND; i++)
-						for (int j = 1; j < ND; j++) {
-							if (YLOC[node] < 0.0)
-								H = -0.5;
-							else
-								H = 0.5;
-
-							GND[i] = GND[i] + AjacInv[i][j] * SND[j][node] * H;
-						}
-				}
-
-				for (int i = 0; i < 10; i++)
-					for (int j = 0; j < 10; j++)
-						B[i][j] = 0.0;
-
-				for (int j = 1; j < ND; j++)
-					for (int l = 1; l < ND; l++) {
-						B[j][l] = AjacInv[j][l];
-						B[j + 3][l + 3] = AjacInv[j][l];
-						B[j + 6][l + 6] = AjacInv[j][l];
-					}
-
-				for (int i = 0; i < 10; i++)
-					for (int j = 0; j < NDLOC; j++)
-						C[i][j] = 0.0;
-
-				for (int i = 1; i < 4; i++)
-					for (int j = 1; j < 24; j = j + 3)
-						C[i][j] = SND[i][(j + 2) / 3];
-
-				for (int i = 4; i < 7; i++)
-					for (int j = 2; j < 24; j = j + 3)
-						C[i][j] = SND[i - 3][(j + 1) / 3];
-
-				for (int i = 7; i < 10; i++)
-					for (int j = 3; j < 25; j = j + 3)
-						C[i][j] = SND[i - 6][j / 3];
-
-				for (int i = 0; i < NDS; i++)
-					for (int j = 0; j < 10; j++)
-						AB[i][j] = 0.0;
-
-				for (int i = 1; i < NDS; i++)
-					for (int j = 1; j < 10; j++)
-						for (int k = 1; k < 10; k++)
-							AB[i][j] = AB[i][j] + A[i][k] * B[k][j];
-
-				for (int i = 0; i < NDS; i++)
-					for (int j = 0; j < NDLOC; j++)
-						BB[i][j] = 0.0;
-
-				for (int i = 1; i < NDS; i++)
-					for (int j = 1; j < NDLOC; j++)
-						for (int k = 1; k < 10; k++)
-							BB[i][j] = BB[i][j] + AB[i][k] * C[k][j];
-
-				for (int i = 0; i < NDLOC; i++)
-					for (int j = 0; j < NDS; j++) {
-						BBTRAN[i][j] = 0.0;
-						BBTRANE[i][j] = 0.0;
-					}
-
-				for (int i = 1; i < NDS; i++)
-					for (int j = 1; j < NDLOC; j++)
-						BBTRAN[j][i] = BB[i][j];
-
-				for (int i = 1; i < NDLOC; i++)
-					for (int j = 1; j < NDS; j++)
-						for (int k = 1; k < NDS; k++)
-							BBTRANE[i][j] = BBTRANE[i][j]
-									+ BBTRAN[i][k] * EE3D[k][j];
-
-				double Dalpha[NDS];
 				Dalpha[1] = bv * et[1] * GND[1];
 				Dalpha[2] = bv * et[2] * GND[2];
 				Dalpha[3] = bv * et[3] * GND[3];
@@ -436,142 +318,36 @@ void DISLOCATIONFORCE(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN]
 
 				for (int i = 1; i < NDLOC; i++)
 					for (int k = 1; k < NDS; k++)
-						DISLOCATIONF[i] = DISLOCATIONF[i]
-								+ (BBTRANE[i][k] * Dalpha[k] * Det);
+						DISLOCATIONF[i] += BBTRANE[i][k] * Dalpha[k] * Det;
 
 			}
 }
 
 void STIFF(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN]) {
 
-	double B[10][10], C[10][NDLOC];
-	double BB[NDS][NDLOC], BBTRAN[NDLOC][NDS];
-
-	double SND[ND][NODEN];
-
-	double BBTRANE[NDLOC][NDS], AB[NDS][10];
-
-	double SHI, NEW, KSHI, Det;
+	double SHI, NEW, KSHI, Det, sqrt_3;
 	double COR[NODEN][ND];
 
+    sqrt_3 = 1.0/sqrt(3.0);
 	for (int i = 0; i < NDLOC; i++)
 		for (int j = 0; j < NDLOC; j++)
 			AKLOC[i][j] = 0.0;
+			
+	for (int i = 0; i < NODEN; i++) {
+	    COR[i][0] = 0.0;
+        COR[i][1] = XLOC[i];
+        COR[i][2] = YLOC[i];
+        COR[i][3] = ZLOC[i];
+    }
 
 	for (int III = 1; III < 3; III++)        		// GAUSS INTEGRATION LOOP
 		for (int JJJ = 1; JJJ < 3; JJJ++)
 			for (int PPP = 1; PPP < 3; PPP++) {
-				if (III == 1)
-					SHI = -0.577350269189626;
-				if (III == 2)
-					SHI = 0.577350269189626;
-
-				if (JJJ == 1)
-					NEW = -0.577350269189626;
-				if (JJJ == 2)
-					NEW = 0.577350269189626;
-
-				if (PPP == 1)
-					KSHI = -0.577350269189626;
-				if (PPP == 2)
-					KSHI = 0.577350269189626;
-
-				for (int i = 0; i < ND; i++)
-					for (int j = 0; j < NODEN; j++)
-						SND[i][j] = 0.0;
-
-				for (int j = 1; j < NODEN; j++) {
-					SND[1][j] = (1.0 / 8.0) * DIR1[j] * (1.0 + NEW * DIR2[j])
-							* (1.0 + KSHI * DIR3[j]);
-					SND[2][j] = (1.0 / 8.0) * DIR2[j] * (1.0 + SHI * DIR1[j])
-							* (1.0 + KSHI * DIR3[j]);
-					SND[3][j] = (1.0 / 8.0) * DIR3[j] * (1.0 + NEW * DIR2[j])
-							* (1.0 + SHI * DIR1[j]);
-				}
-
-				for (int i = 0; i < NODEN; i++)
-					for (int j = 0; j < ND; j++)
-						COR[i][j] = 0.0;
-
-				for (int i = 1; i < NODEN; i++) {
-					COR[i][1] = XLOC[i];
-					COR[i][2] = YLOC[i];
-					COR[i][3] = ZLOC[i];
-				}
-
-				for (int i = 0; i < ND; i++)
-					for (int j = 0; j < ND; j++) {
-						Ajac[i][j] = 0.0;
-						AjacInv[i][j] = 0.0;
-					}
-
-				for (int i = 1; i < ND; i++)
-					for (int j = 1; j < ND; j++)
-						for (int k = 1; k < NODEN; k++)
-							Ajac[i][j] = Ajac[i][j] + SND[i][k] * COR[k][j];
-
-				Det = JacInv();
-
-				for (int i = 0; i < 10; i++)
-					for (int j = 0; j < 10; j++)
-						B[i][j] = 0.0;
-
-				for (int j = 1; j < ND; j++)
-					for (int l = 1; l < ND; l++) {
-						B[j][l] = AjacInv[j][l];
-						B[j + 3][l + 3] = AjacInv[j][l];
-						B[j + 6][l + 6] = AjacInv[j][l];
-					}
-
-				for (int i = 0; i < 10; i++)
-					for (int j = 0; j < NDLOC; j++)
-						C[i][j] = 0.0;
-
-				for (int i = 1; i < 4; i++)
-					for (int j = 1; j < 24; j = j + 3)
-						C[i][j] = SND[i][(j + 2) / 3];
-
-				for (int i = 4; i < 7; i++)
-					for (int j = 2; j < 24; j = j + 3)
-						C[i][j] = SND[i - 3][(j + 1) / 3];
-
-				for (int i = 7; i < 10; i++)
-					for (int j = 3; j < 25; j = j + 3)
-						C[i][j] = SND[i - 6][j / 3];
-
-				for (int i = 0; i < NDS; i++)
-					for (int j = 0; j < 10; j++)
-						AB[i][j] = 0.0;
-
-				for (int i = 1; i < NDS; i++)
-					for (int j = 1; j < 10; j++)
-						for (int k = 1; k < 10; k++)
-							AB[i][j] = AB[i][j] + A[i][k] * B[k][j];
-
-				for (int i = 0; i < NDS; i++)
-					for (int j = 0; j < NDLOC; j++)
-						BB[i][j] = 0.0;
-
-				for (int i = 1; i < NDS; i++)
-					for (int j = 1; j < NDLOC; j++)
-						for (int k = 1; k < 10; k++)
-							BB[i][j] = BB[i][j] + AB[i][k] * C[k][j];
-
-				for (int i = 0; i < NDLOC; i++)
-					for (int j = 0; j < NDS; j++) {
-						BBTRAN[i][j] = 0.0;
-						BBTRANE[i][j] = 0.0;
-					}
-
-				for (int i = 1; i < NDS; i++)
-					for (int j = 1; j < NDLOC; j++)
-						BBTRAN[j][i] = BB[i][j];
-
-				for (int i = 1; i < NDLOC; i++)
-					for (int j = 1; j < NDS; j++)
-						for (int k = 1; k < NDS; k++)
-							BBTRANE[i][j] = BBTRANE[i][j]
-									+ BBTRAN[i][k] * EE3D[k][j];
+				SHI  = sqrt_3 * pow(-1.0, III);
+                NEW  = sqrt_3 * pow(-1.0, JJJ);
+                KSHI = sqrt_3 * pow(-1.0, PPP);
+                
+                Det = calc_matrices(SHI, NEW, KSHI, COR);
 
 				for (int i = 1; i < NDLOC; i++)
 					for (int j = 1; j < NDLOC; j++)
@@ -585,122 +361,32 @@ void STIFF(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN]) {
 void calc_stress(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN],
 		int IEL) {
 
-	double B[10][10], C[10][NDLOC];
-	double BB[NDS][NDLOC], BBTRAN[NDLOC][NDS];
-	double SND[ND][NODEN];
-
-	double BBTRANE[NDLOC][NDS], AB[NDS][10];
-
-	double SHI, NEW, KSHI, Det;
+	double SHI, NEW, KSHI, Det, sqrt_3;
 	double COR[NODEN][ND];
+    double DIS[NODEN][ND], DP[NDLOC], BBDP[NDS], ENDP[NDLOC];
+    int iicon;
 	double AvgStress[6], AvgStrain[6];
 
+    sqrt_3 = 1.0/sqrt(3.0);
 	for (int i = 0; i < 6; ++i) {
         	AvgStress[i] = 0.0;
         	AvgStrain[i] = 0.0;
 	}
+	for (int i = 0; i < NODEN; i++) {
+	    COR[i][0] = 0.0;
+        COR[i][1] = XLOC[i];
+        COR[i][2] = YLOC[i];
+        COR[i][3] = ZLOC[i];
+    }
 
 	for (int III = 1; III < 3; III++)        		// GAUSS INTEGRATION LOOP
 		for (int JJJ = 1; JJJ < 3; JJJ++)
 			for (int PPP = 1; PPP < 3; PPP++) {
-				if (III == 1)
-					SHI = -0.577350269189626;
-				if (III == 2)
-					SHI = 0.577350269189626;
-
-				if (JJJ == 1)
-					NEW = -0.577350269189626;
-				if (JJJ == 2)
-					NEW = 0.577350269189626;
-
-				if (PPP == 1)
-					KSHI = -0.577350269189626;
-				if (PPP == 2)
-					KSHI = 0.577350269189626;
-
-				for (int i = 0; i < ND; i++)
-					for (int j = 0; j < NODEN; j++)
-						SND[i][j] = 0.0;
-
-				for (int j = 1; j < NODEN; j++) {
-					SND[1][j] = (1.0 / 8.0) * DIR1[j] * (1.0 + NEW * DIR2[j])
-							* (1.0 + KSHI * DIR3[j]);
-					SND[2][j] = (1.0 / 8.0) * DIR2[j] * (1.0 + SHI * DIR1[j])
-							* (1.0 + KSHI * DIR3[j]);
-					SND[3][j] = (1.0 / 8.0) * DIR3[j] * (1.0 + NEW * DIR2[j])
-							* (1.0 + SHI * DIR1[j]);
-				}
-
-				for (int i = 0; i < NODEN; i++)
-					for (int j = 0; j < ND; j++)
-						COR[i][j] = 0.0;
-
-				for (int i = 1; i < NODEN; i++) {
-					COR[i][1] = XLOC[i];
-					COR[i][2] = YLOC[i];
-					COR[i][3] = ZLOC[i];
-				}
-
-				for (int i = 0; i < ND; i++)
-					for (int j = 0; j < ND; j++) {
-						Ajac[i][j] = 0.0;
-						AjacInv[i][j] = 0.0;
-					}
-
-				for (int i = 1; i < ND; i++)
-					for (int j = 1; j < ND; j++)
-						for (int k = 1; k < NODEN; k++)
-							Ajac[i][j] = Ajac[i][j] + SND[i][k] * COR[k][j];
-
-				Det = JacInv();
-
-				for (int i = 0; i < 10; i++)
-					for (int j = 0; j < 10; j++)
-						B[i][j] = 0.0;
-
-				for (int j = 1; j < ND; j++)
-					for (int l = 1; l < ND; l++) {
-						B[j][l] = AjacInv[j][l];
-						B[j + 3][l + 3] = AjacInv[j][l];
-						B[j + 6][l + 6] = AjacInv[j][l];
-					}
-
-				for (int i = 0; i < 10; i++)
-					for (int j = 0; j < NDLOC; j++)
-						C[i][j] = 0.0;
-
-				for (int i = 1; i < 4; i++)
-					for (int j = 1; j < 24; j = j + 3)
-						C[i][j] = SND[i][(j + 2) / 3];
-
-				for (int i = 4; i < 7; i++)
-					for (int j = 2; j < 24; j = j + 3)
-						C[i][j] = SND[i - 3][(j + 1) / 3];
-
-				for (int i = 7; i < 10; i++)
-					for (int j = 3; j < 25; j = j + 3)
-						C[i][j] = SND[i - 6][j / 3];
-
-				for (int i = 0; i < NDS; i++)
-					for (int j = 0; j < 10; j++)
-						AB[i][j] = 0.0;
-
-				for (int i = 1; i < NDS; i++)
-					for (int j = 1; j < 10; j++)
-						for (int k = 1; k < 10; k++)
-							AB[i][j] = AB[i][j] + A[i][k] * B[k][j];
-
-				for (int i = 0; i < NDS; i++)
-					for (int j = 0; j < NDLOC; j++)
-						BB[i][j] = 0.0;
-
-				for (int i = 1; i < NDS; i++)
-					for (int j = 1; j < NDLOC; j++)
-						for (int k = 1; k < 10; k++)
-							BB[i][j] = BB[i][j] + AB[i][k] * C[k][j];
-
-				double DIS[NODEN][ND], DP[NDLOC], BBDP[NDS], ENDP[NDLOC];
-				int iicon;
+				SHI  = sqrt_3 * pow(-1.0, III);
+                NEW  = sqrt_3 * pow(-1.0, JJJ);
+                KSHI = sqrt_3 * pow(-1.0, PPP);
+                
+                Det = calc_matrices(SHI, NEW, KSHI, COR);
 
 				for (int j = 1; j < NODEN; j++)
 					for (int jjk = 1; jjk < ND; jjk++) {
@@ -731,29 +417,25 @@ void calc_stress(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN],
 					BBDP[i] = 0.0;
 				}
 
-                 int i = IEL;
-
-		if (augmented_element(i)) {
+                if (augmented_element(IEL)) {
                         
-			for (int j = 1; j < NODEN; j++){
-			    /* Should be done for all DOF, bv should be vector */
-                if (Yglob[LOTOGO[8 * i + (j - 1)]-1] > 0)
-					DP[3 * j] = DP[3 * j] - 0.5 * bv;
-                else
-                    DP[3 * j] = DP[3 * j] + 0.5 * bv;
-				}
+                    for (int j = 1; j < NODEN; j++){
+                        /* Should be done for all DOF, bv should be vector */
+                        if (Yglob[LOTOGO[8*IEL + j - 1] - 1] > 0)
+                            DP[3*j] = DP[3*j] - 0.5*bv;
+                        else
+                            DP[3*j] = DP[3*j] + 0.5*bv;
+                        }
                         
-        }
-	    
-
+                }
 
 				for (int i = 1; i < NDS; i++)
 					for (int k = 1; k < NDLOC; k++)
 						BBDP[i] = BBDP[i] + BB[i][k] * (DP[k] + ENDP[k]);
 
-				BBDP[4] = 2.0 * BBDP[4];
-                                BBDP[5] = 2.0 * BBDP[5];
-                                BBDP[6] = 2.0 * BBDP[6];
+				BBDP[4] *= 2.0;
+                BBDP[5] *= 2.0;
+                BBDP[6] *= 2.0;
 
 				for (int i = 1; i < NDS; i++)
 					for (int k = 1; k < NDS; k++)
@@ -1088,7 +770,6 @@ void update_fglob() {
 
 		ENFORCEDFORCE(XLOC, YLOC, ZLOC, IEL);
 		Assem_force(IEL);
-		//DISLOCATIONELEMENTFORCE(XLOC, YLOC, ZLOC, et, IEL);
 		if (augmented_element(IEL)){
 		    DISLOCATIONFORCE(XLOC, YLOC, ZLOC, IEL);
 		    AssemDislocationForce(IEL);

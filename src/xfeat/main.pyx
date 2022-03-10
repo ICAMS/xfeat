@@ -106,9 +106,9 @@ class Model(object):
         # set global parameters for pyVista
         pv.global_theme.font.title_size = 24
         pv.global_theme.font.label_size = 20
-        self.e_names = ['eps_xx', 'eps_yy', 'eps_zz', 'eps_yz', 'eps_xy', 'eps_xz']
-        self.s_names = ['sig_xx', 'sig_yy', 'sig_zz', 'sig_yz', 'sig_xy', 'sig_xz']
-        self.comps = ['xx', 'yy', 'zz', 'yz', 'xz', 'xy']
+        self.e_names = ['eps_xx', 'eps_yy', 'eps_zz', 'eps_xy', 'eps_yz', 'eps_xz']
+        self.s_names = ['sig_xx', 'sig_yy', 'sig_zz', 'sig_xy', 'sig_yz', 'sig_xz']
+        self.comps = ['xx', 'yy', 'zz', 'xy', 'yz', 'xz']
         
     def atoms(self):
         '''
@@ -632,10 +632,10 @@ class Model(object):
         elif tag == 'dispx' or tag == 'dispy' or tag == 'dispz':
             self.plot_at(tag, deformed=deformed)
         elif tag == 'sigxx' or tag == 'sigyy' or tag == 'sigzz' or\
-             tag == 'sigxy' or tag == 'sigxz' or tag == 'sigyz':
+             tag == 'sigxy' or tag == 'sigyz' or tag == 'sigxz':
             self.plot_el(tag='sig', comp=tag[-2:])
         elif tag == 'epsxx' or tag == 'epsyy' or tag == 'epszz' or\
-             tag == 'epsxy' or tag == 'epsxz' or tag == 'epsyz':
+             tag == 'epsxy' or tag == 'epsyz' or tag == 'epsxz':
             self.plot_el(tag='eps', comp=tag[-2:])
         else:
             raise ValueError('Unknown value in parameter tag.')
