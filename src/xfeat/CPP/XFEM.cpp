@@ -309,12 +309,12 @@ void DISLOCATIONFORCE(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN]
                 
                 Det = calc_matrices(SHI, NEW, KSHI, COR);
 
-				Dalpha[1] = bv * et[1] * GND[1];
-				Dalpha[2] = bv * et[2] * GND[2];
-				Dalpha[3] = bv * et[3] * GND[3];
-				Dalpha[4] = bv * (et[2] * GND[1] + et[1] * GND[2]);
-				Dalpha[5] = bv * (et[3] * GND[2] + et[2] * GND[3]);
-				Dalpha[6] = bv * (et[1] * GND[3] + et[3] * GND[1]);
+				Dalpha[1] = bv * et[0] * GND[1];
+				Dalpha[2] = bv * et[1] * GND[2];
+				Dalpha[3] = bv * et[2] * GND[3];
+				Dalpha[4] = bv * (et[1] * GND[1] + et[0] * GND[2]);
+				Dalpha[5] = bv * (et[2] * GND[2] + et[1] * GND[3]);
+				Dalpha[6] = bv * (et[0] * GND[3] + et[2] * GND[1]);
 
 				for (int i = 1; i < NDLOC; i++)
 					for (int k = 1; k < NDS; k++)

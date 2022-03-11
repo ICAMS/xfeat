@@ -1,0 +1,34 @@
+ensemble	glok
+#imd_mpi_eam_glok_nbl
+
+coordname	iron_edge.chkpt
+outfiles	./run/iron_edge_relax
+
+core_potential_file     mendelev/phi_mendelev
+atomic_e-density_file   mendelev/rho_mendelev
+embedding_energy_file   mendelev/emb_en_mendelev
+
+maxsteps      80000
+total_types	3
+ntypes        1
+box_from_header 1
+pbc_dirs	0 0 1
+timestep	0.001
+eng_int	10
+checkpt_int	5000
+cpu_dim 4 2 1
+
+ada_nbr_rcut 3.5  # about lattice_Constant * 1.2
+stressAverage_int 1
+stressAverage_delta 1 #Average over 1 timestep
+fullAtomicResolution 1
+
+restrictionvector 2	0 0 0
+restrictionvector 1	0 0 0
+restrictionvector 0	1 1 1
+
+fnorm_threshold	1e-5
+
+
+seed		30
+

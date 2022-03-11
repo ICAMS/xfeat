@@ -21,6 +21,7 @@ double EE3D[NDS][NDS];
 // atomistic quantities
 int natom = 0;
 double bv;
+double dist[3];
 double shift[2];
 double coords[ATOMTOTAL][3];
 double at_disp[ATOMTOTAL][3];
@@ -33,7 +34,7 @@ int nelem_full_big_box_y;
 int nelem_full_big_box_z;
 double DIR1[NODEN], DIR2[NODEN], DIR3[NODEN];
 double A[NDS][10];
-double et[ND];
+double et[3];
 double Lx, Ly, Lz;
 double stress[6];
 double strain[6];
@@ -82,7 +83,6 @@ int ind_type4[ATOMTOTAL];  // store numbers of type 4 atoms
 double minwidth_x = 11.0;
 double minwidth_y = 11.0;
 double eps = 1.e-7;
-double dist[3];
 double type4_disp[ATOMTOTAL][3];
 double masses[ATOMTOTAL];
 double nID[NELEIN][4];

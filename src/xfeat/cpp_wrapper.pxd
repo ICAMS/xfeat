@@ -26,6 +26,7 @@ cdef extern from "cpp_wrapper.h":
     # atomistic quantities
     int natom  # number of atoms, defined in set_up_atoms
     double bv  # magnitude of Burgers vector, defined in atom_set_up
+    double dist[3]
     double shift[2]  # shift between atmomistic coords and nodal positions
     double coords[20000][3]  # atomic positions in reference configuration, defined in set_up_atoms
     double at_disp[20000][3]  # atomic displacements, defined in nodal_displacement
@@ -40,9 +41,9 @@ cdef extern from "cpp_wrapper.h":
     int nelem_full_big_box_x  # number of elements along x-axis
     int nelem_full_big_box_y
     int nelem_full_big_box_z
-    double DIR1[9], DIR2[9], DIR3[9]
+    double DIR1[9], DIR2[9], DIR3[9]  # constants needed for integration
     double A[7][10]
-    double et[4]
+    double et[3]  # Burgers vector components
     double Lx, Ly, Lz  # lengths of axes of atomic box
     double stress[6]  # Voigt stress tensor in element, calulated in calc_stress
     double strain[6]  # Voigt strain tensor in element, calulated in calc_stress

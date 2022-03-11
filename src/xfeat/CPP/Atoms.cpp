@@ -164,7 +164,6 @@ extern void atom_set_up(){
 				min_coord[0] = x;
 				min_coord[1] = y;
 				min_coord[2] = z;
-				bv = 0.0;
 			}
 			else {
 				double diffy = fabs(ref_atom[1] - y);
@@ -203,7 +202,6 @@ extern void atom_set_up(){
 				if (min_coord[0] > x) min_coord[0] = x;
 				if (min_coord[1] > y) min_coord[1] = y;
 				if (min_coord[2] > z) min_coord[2] = z;
-        		bv = dist[2];
 			}
 
 			atom_id[natom] = number;
@@ -370,8 +368,8 @@ void create_atom_dis() {
 	double mass, x, y, z;
 	double fx, fy, fz;
 
-	double arctan;
-	double w;
+	double arctan, sgn_y, neg_x;
+	double q, v, w, hx, hy, hz;
 
 	int type_atom;
 
@@ -431,36 +429,32 @@ void create_atom_dis() {
 
 			}
 
-			x = x - Lx * 0.5 + shift[0];  // Current
-			y = y - Ly * 0.5 + shift[1];
-
 			if (type == 4) {
 
 				z += type4_disp[number][2];
 				y += type4_disp[number][1];
 				x += type4_disp[number][0];
 
-				if (type4_disp[number][2] == 0.0) {
-					cout << "Error in atom displacement calculations!" << endl;
-					exit(EXIT_FAILURE);
-				}
-
 			} else {
-
-				if ((x == 0) && (y == 0)) {
-					x = 0.25;
-					arctan = atan2(double(y), double(x));
-				} else
-					arctan = atan2(double(y), double(x));
-
-				w = (bv / (2.0 * PI)) * arctan;
-
+                hx = x - Lx * 0.5 + shift[0];
+                hy = y - Ly * 0.5 + shift[1];
+                hz = z;
+				if ((hx == 0) && (hy == 0))
+					arctan = 0.0;
+				else
+				    arctan = atan2(double(hy), double(hx));
+				sgn_y = (hy > 0.0) - (hy < 0.0);
+				neg_x = (hx < 0.0);
+				if (neg_x && (hx > -5.0*bv))
+				    neg_x *= hx / (-5.0*bv);
+                q = et[0] * 0.5 * bv * sgn_y * neg_x;
+                v = et[1];
+				w = et[2] * 0.5 * bv * arctan / PI;
+                x += q;
+                y += v;
 				z += w;
 
 			}
-
-			x = x + Lx * 0.5 - shift[0];  // Current
-			y = y + Ly * 0.5 - shift[1];
 
 			myfile << number << "  " << type << "  " << mass << "  " << x
 					<< "  " << y << "  " << z << endl;

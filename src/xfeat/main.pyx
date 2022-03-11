@@ -99,10 +99,6 @@ class Model(object):
         A[6][3] = A[6][7] = 1.0
         xfc.A = A
         
-        et = np.zeros(4, dtype=np.double)
-        et[3] = 1.0
-        xfc.et = et
-        
         # set global parameters for pyVista
         pv.global_theme.font.title_size = 24
         pv.global_theme.font.label_size = 20
@@ -164,7 +160,9 @@ class Model(object):
                   .format(self.temp))
         #xfc.get_n_atoms()  # get number of atoms and allocate memory
         xfc.atom_set_up()  # define types for atoms on which BC are applied
-        self.bv = xfc.bv  # Burgers vector
+        self.dist = xfc.dist  # atomic distances along Cartesian coordinates
+        self.bv = self.dist[2]  # Burgers vector
+
         if np.abs(2.*self.bv/np.sqrt(3.) - self.lp) > 1.e-9:
             print('Correcting lattice parameter in material definition after atomic relaxation.')
             print('Given value: {}'.format(self.lp))
@@ -328,7 +326,7 @@ class Model(object):
         self.update_stress = True
         return
     
-    def init_dislo(self):
+    def init_dislo(self, bvec=None):
         '''
         Introduce screw dislocation and write updated atomic configuration
 
@@ -339,6 +337,16 @@ class Model(object):
         '''
         # create Volterra screw dislocation by introducing a shift in
         # XFEM elements and atomic core
+        if bvec is None:
+            print('No Burgers vector given, creating screw dislocation.')
+            self.b_vec = np.zeros(3, dtype=np.double)
+            self.b_vec[2] = 1.
+            self.bv = self.dist[2]
+        else:
+            self.b_vec = np.array(bvec, dtype=np.double)
+            self.bv = self.dist[2] 
+        xfc.et = self.b_vec
+        xfc.bv = self.bv
         xfc.create_xfem_dis()  # create displacements in XFEM region
         self.ubc = np.array(xfc.ENFRDISPglob[3:], dtype=np.double)
         self.grid.point_data['ubc_x'] = self.ubc[0::3]
