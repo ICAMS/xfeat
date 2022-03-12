@@ -275,14 +275,15 @@ extern void atom_set_up(){
     // assign atom types
     n_type4 = 0;
 	n_type2 = 0;
+	double tf = 0.5;  // tf
 	for (count = 0; count < natom; count++) {
 	    x = coords[atom_id[count]][0];
 	    y = coords[atom_id[count]][1];
 	    z = coords[atom_id[count]][2];
-		if (((fabs(x-ref_coord_low[0]) < 0.2*plane_dist[0]) && (y >= ref_coord_low[1]-0.2*plane_dist[1]) && (y <= ref_coord_high[1]+0.2*plane_dist[1])) ||
-		    ((fabs(y-ref_coord_low[1]) < 0.2*plane_dist[1]) && (x >= ref_coord_low[0]-0.2*plane_dist[0]) && (x <= ref_coord_high[0]+0.2*plane_dist[0])) ||
-		    ((fabs(x-ref_coord_high[0]) < 0.2*plane_dist[0]) && (y >= ref_coord_low[1]-0.2*plane_dist[1]) && (y <= ref_coord_high[1]+0.2*plane_dist[1])) ||
-		    ((fabs(y-ref_coord_high[1]) < 0.2*plane_dist[1]) && (x >= ref_coord_low[0]-0.2*plane_dist[0]) && (x <= ref_coord_high[0]+0.2*plane_dist[0]))) {
+		if (((fabs(x-ref_coord_low[0]) < tf*plane_dist[0]) && (y >= ref_coord_low[1]-tf*plane_dist[1]) && (y <= ref_coord_high[1]+tf*plane_dist[1])) ||
+		    ((fabs(y-ref_coord_low[1]) < tf*plane_dist[1]) && (x >= ref_coord_low[0]-tf*plane_dist[0]) && (x <= ref_coord_high[0]+tf*plane_dist[0])) ||
+		    ((fabs(x-ref_coord_high[0]) < tf*plane_dist[0]) && (y >= ref_coord_low[1]-tf*plane_dist[1]) && (y <= ref_coord_high[1]+tf*plane_dist[1])) ||
+		    ((fabs(y-ref_coord_high[1]) < tf*plane_dist[1]) && (x >= ref_coord_low[0]-tf*plane_dist[0]) && (x <= ref_coord_high[0]+tf*plane_dist[0]))) {
 			type = 2;
             aID[n_type2][0] = atom_id[count];
             aID[n_type2][1] = x;
@@ -368,12 +369,16 @@ void create_atom_dis() {
 	double mass, x, y, z;
 	double fx, fy, fz;
 
-	double arctan, sgn_y, neg_x;
-	double q, v, w, hx, hy, hz;
+	double term1, term2, term3, term4, term5, term6, term7, arctan;
+	double u, v, w, hx, hy, hz, sgny;
 
 	int type_atom;
 
 	type_atom = 0;
+	term1 = (bv*et[0] / (2.0 * PI));
+    term4 = (1 - 2 * nu) / (4 * (1 - nu));
+    term5 = 4 * (1 - nu);
+    term6 = 2 * (1 - nu);
 
 	std::string line;
 	char *token;
@@ -438,19 +443,23 @@ void create_atom_dis() {
 			} else {
                 hx = x - Lx * 0.5 + shift[0];
                 hy = y - Ly * 0.5 + shift[1];
-                hz = z;
-				if ((hx == 0) && (hy == 0))
-					arctan = 0.0;
-				else
-				    arctan = atan2(double(hy), double(hx));
-				sgn_y = (hy > 0.0) - (hy < 0.0);
-				neg_x = (hx < 0.0);
-				if (neg_x && (hx > -5.0*bv))
-				    neg_x *= hx / (-5.0*bv);
-                q = et[0] * 0.5 * bv * sgn_y * neg_x;
-                v = et[1];
-				w = et[2] * 0.5 * bv * arctan / PI;
-                x += q;
+                //hz = z;
+				if ((hx == 0) && (hy == 0)){
+					term2 = (pow(0.25, 2.0) + pow(hy, 2.0));
+                    term3 = (pow(0.25, 2.0) - pow(hy, 2.0));
+                    term7 = (3.0 * pow(0.25, 2.0) + pow(hy, 2.0));
+                    arctan = atan2(hy, 0.25);
+				} else {
+				    term2 = (pow(hx, 2.0) + pow(hy, 2.0));
+                    term3 = (pow(hx, 2.0) - pow(hy, 2.0));
+                    term7 = (3.0 * pow(hx, 2.0) + pow(hy, 2.0));
+                    arctan = atan2(hy, hx);
+                }
+                sgny = -1.0; //(hy > 0.0) - (hy < 0.0);
+                u = term1 * (arctan + (hx * hy) / (term6 * term2));
+                v = sgny * term1 * (term4 * log(term2) + term3 / (term5 * term2));
+				w = bv * et[2] * 0.5 * arctan / PI;
+                x += u;
                 y += v;
 				z += w;
 

@@ -22,6 +22,7 @@ cdef extern from "cpp_wrapper.h":
     string temp_dir  # absolute path to temp directory, defined in Model.__init__
     double fem_size  # size of FEM geometry, defined in Model.__init__
     double EE3D[7][7]  # rotatated material stiffness tensor, defined in Model.mesh
+    double nu  # Poisson ratio
     
     # atomistic quantities
     int natom  # number of atoms, defined in set_up_atoms

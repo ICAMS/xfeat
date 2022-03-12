@@ -7,7 +7,7 @@ Created on Sun Feb  6 17:46:17 2022
 @author: alexander
 """
 
-import os
+import os, warnings
 import time
 import numpy as np
 import pyvista as pv
@@ -21,6 +21,7 @@ class Model(object):
     def __init__(self, mat, size=500):
         self.fem_size = size  # size of FEM part
         self.bv = None  # Burgers vector
+        self.dist = None  # reference distances of atoms along box edges
         self.nodes = None  # nodal positions
         self.Nnode = None  # Number of nodes
         self.elmts = None  # elements
@@ -49,6 +50,8 @@ class Model(object):
         self.C11 = mat['C11']
         self.C12 = mat['C12']
         self.C44 = mat['C44']
+        self.nu = self.C12 / (self.C11 + self.C12)
+        xfc.nu = self.nu
         self.Cel = rot_elast_tens(self.C11, self.C12, self.C44, self.ori)\
                    * 0.0062417  # elastic tensor in eV/A^3
 
@@ -106,7 +109,7 @@ class Model(object):
         self.s_names = ['sig_xx', 'sig_yy', 'sig_zz', 'sig_xy', 'sig_yz', 'sig_xz']
         self.comps = ['xx', 'yy', 'zz', 'xy', 'yz', 'xz']
         
-    def atoms(self):
+    def atoms(self, size=None):
         '''
         Set up atomic core. 
         Produces IMD input file with atom types for boundary conditions.
@@ -118,8 +121,6 @@ class Model(object):
             
         Attributes
         ----------
-        bv : float
-            Norm of Brugers vector after relaxation
         lp : float
             Lattice parameter after relaxtion
         shift : (2,) array
@@ -127,10 +128,12 @@ class Model(object):
 
         '''
         # create relaxed perfect crystal as IMD input (Steps 2 and 3)
+        if size is None:
+            size = [10, 17, 3]
         name_urel = self.temp + '/unrelaxed_perfect_crystal.imd'
-        sx = 10 * self.lp * np.linalg.norm(self.ori[0,:])
-        sy = 17 * self.lp * np.linalg.norm(self.ori[1,:])
-        sz =  3 * self.lp * np.linalg.norm(self.ori[2,:])
+        sx = size[0] * self.lp * np.linalg.norm(self.ori[0,:])  # 10 
+        sy = size[1] * self.lp * np.linalg.norm(self.ori[1,:])  # 17
+        sz = size[2] * self.lp * np.linalg.norm(self.ori[2,:])
         with open(self.temp+'/imd_create_cryst.param', 'w') as fd:
             fd.write('structure    {}\n'.format(self.mat['cs']))
             fd.write('new_z    {} {} {}\n'\
@@ -161,13 +164,13 @@ class Model(object):
         #xfc.get_n_atoms()  # get number of atoms and allocate memory
         xfc.atom_set_up()  # define types for atoms on which BC are applied
         self.dist = xfc.dist  # atomic distances along Cartesian coordinates
-        self.bv = self.dist[2]  # Burgers vector
+        """self.bv = self.dist[2]  # Burgers vector
 
         if np.abs(2.*self.bv/np.sqrt(3.) - self.lp) > 1.e-9:
             print('Correcting lattice parameter in material definition after atomic relaxation.')
             print('Given value: {}'.format(self.lp))
             self.lp = 2.*self.bv/np.sqrt(3.)
-            print('New value: {}'.format(self.lp))
+            print('New value: {}'.format(self.lp))"""
         self.shift = xfc.shift  # shift along slip plane
         self.Lx = xfc.Lx  # dimensions of atomic box
         self.Ly = xfc.Ly
@@ -216,7 +219,7 @@ class Model(object):
         '''
         cdef int i, ii, iicon, cf
         
-        if self.bv is None:
+        if self.dist is None:
             raise AttributeError('No atomic box found. Run "get_atoms" first.')
         # setup elastic tensor for XFEM
         EE3D = np.zeros((7, 7), dtype=np.double)
@@ -326,7 +329,7 @@ class Model(object):
         self.update_stress = True
         return
     
-    def init_dislo(self, bvec=None):
+    def init_dislo(self, bdir=None):
         '''
         Introduce screw dislocation and write updated atomic configuration
 
@@ -337,14 +340,22 @@ class Model(object):
         '''
         # create Volterra screw dislocation by introducing a shift in
         # XFEM elements and atomic core
-        if bvec is None:
+        if bdir is None:
             print('No Burgers vector given, creating screw dislocation.')
             self.b_vec = np.zeros(3, dtype=np.double)
             self.b_vec[2] = 1.
             self.bv = self.dist[2]
         else:
-            self.b_vec = np.array(bvec, dtype=np.double)
-            self.bv = self.dist[2] 
+            if len(bdir) != 3:
+                raise ValueError('3 Components must be given for Burgers vector direction.')
+            self.b_vec = np.array(bdir, dtype=np.double)
+            ind = np.nonzero(self.b_vec)[0]
+            if len(ind) != 1:
+                raise ValueError('Only one component for Burgers vector supported.')
+            if not np.isclose(np.linalg.norm(self.b_vec), 1.):
+                self.b_vec /= np.linalg.norm(self.b_vec)
+                warnings.warn('Burgers vector director (bdir) should be given as unit vector.')
+            self.bv = self.dist[ind[0]] 
         xfc.et = self.b_vec
         xfc.bv = self.bv
         xfc.create_xfem_dis()  # create displacements in XFEM region
@@ -359,7 +370,8 @@ class Model(object):
         # create IMD input file with updates positions of type 4 atoms
         xfc.create_atom_dis()  # create dislocation in atomic core
         self.relax_atoms(name='init_dislocation')
-        print('\n Created screw dislocation in model.\n')
+        print(f'\n Created dislocation with Burgers vector ({self.b_vec}) in model.')
+        print(f'Norm of Burgers vector is {self.bv} A')
         
     def atom_bc(self):
         '''

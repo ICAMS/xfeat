@@ -6,11 +6,12 @@ void atom_node() {
     interaction_atom_node
     */
 
-	double min, min_tol, dis;
+	double min_tol, min, dis;
 	double x1, x2, z1, y1, y2, z2;
 
 	for (int i = 0; i < NCONSNODE; i++) {
-		min_tol = 1.0;
+		min_tol = 3.0;
+		min = 100.0;
 
 		x1 = nID[i][1];
 		y1 = nID[i][2];
@@ -28,20 +29,21 @@ void atom_node() {
 			dis = pow(
 					pow((x1 - x2), 2.0) + pow((y1 - y2), 2.0)
 							+ pow((z1 - z2), 2.0), 0.5);
+							
+            if (dis < min) min = dis;
 
-			min = dis;
-
-			if (min < min_tol) {
-				min_tol = min;
+			if (dis < min_tol) {
+				min_tol = dis;
 				interaction_atom_node[i][0] = nID[i][0];
 				interaction_atom_node[i][1] = aID[j][0];
 			}
 
 		} // end of j
 
-		if (min_tol >= 1.0) {
+		if (min_tol >= 3.0) {
 			cout << "Error in finding atom node pair! " << min << endl;
-			cout << "Node: " << i << "Type 2 atoms: " << n_type2 << endl;
+			cout << "Node: " << i << "  Type 2 atoms: " << n_type2 << endl;
+			cout << "Position: " << x1 << "  " << y1 << "  " << z1 << endl;
 			exit(EXIT_FAILURE);
 		}
 
@@ -232,7 +234,7 @@ void atom_element() {
 					x = x + Lx * 0.5 - shift[0];  // Current
 					y = y + Ly * 0.5 - shift[1];
 					cout << x << " " << y << "  " << z << "  " << endl;
-					cout << "Error in finding points inside an element!"
+					cout << "Error in assigning type 4 atoms to element!"
 							<< endl;
 					exit(EXIT_FAILURE);
 				}
@@ -276,11 +278,15 @@ void displacement_interpolation() {
 	double DP[25], SF[9];
 	double dax, day, daz;
 
-	double arctan;
-	double w;
+	double term1, term2, term3, term4, term5, term6, term7, arctan;
+	double u, v, w;
 
 	int check_count_up, check_count_low, check_count;
 
+    term1 = (bv*et[0] / (2.0 * PI));
+    term4 = (1 - 2 * nu) / (4 * (1 - nu));
+    term5 = 4 * (1 - nu);
+    term6 = 2 * (1 - nu);
 	check_count = 0;
 	check_count_up = 0;
 	check_count_low = 0;
@@ -455,57 +461,28 @@ void displacement_interpolation() {
 		type4_disp[atom][0] = dax;
 		type4_disp[atom][1] = day;
 		type4_disp[atom][2] = daz;
-		
-		if ((xat == 0) && (yat == 0)) {
-			xat = 0.25;
-			arctan = atan2(double(yat), double(xat));
-		} else
-			arctan = atan2(double(yat), double(xat));
 
-		w = (bv / (2.0 * PI)) * arctan;
-
-		if ((Xglob[LOTOGO[8 * ele + (1 - 1)]-1] <= 0.0)
-				&& (Xglob[LOTOGO[8 * ele + (2 - 1)]-1] <= 0.0)
-				&& (Xglob[LOTOGO[8 * ele + (3 - 1)]-1] <= 0.0)
-				&& (Xglob[LOTOGO[8 * ele + (4 - 1)]-1] <= 0.0)
-				&& (Xglob[LOTOGO[8 * ele + (5 - 1)]-1] <= 0.0)
-				&& (Xglob[LOTOGO[8 * ele + (6 - 1)]-1] <= 0.0)
-				&& (Xglob[LOTOGO[8 * ele + (7 - 1)]-1] <= 0.0)
-				&& (Xglob[LOTOGO[8 * ele + (8 - 1)]-1] <= 0.0)) {
-			bool condition1, condition2;
-
-			condition1 = false;
-			condition2 = false;
-
-			if ((Yglob[LOTOGO[8 * ele + (1 - 1)]-1] < 0.0)
-					|| (Yglob[LOTOGO[8 * ele + (2 - 1)]-1] < 0.0)
-					|| (Yglob[LOTOGO[8 * ele + (3 - 1)]-1] < 0.0)
-					|| (Yglob[LOTOGO[8 * ele + (4 - 1)]-1] < 0.0)
-					|| (Yglob[LOTOGO[8 * ele + (5 - 1)]-1] < 0.0)
-					|| (Yglob[LOTOGO[8 * ele + (6 - 1)]-1] < 0.0)
-					|| (Yglob[LOTOGO[8 * ele + (7 - 1)]-1] < 0.0)
-					|| (Yglob[LOTOGO[8 * ele + (8 - 1)]-1] < 0.0))
-				condition1 = true;
-
-			if ((Yglob[LOTOGO[8 * ele + (1 - 1)]-1] > 0.0)
-					|| (Yglob[LOTOGO[8 * ele + (2 - 1)]-1] > 0.0)
-					|| (Yglob[LOTOGO[8 * ele + (3 - 1)]-1] > 0.0)
-					|| (Yglob[LOTOGO[8 * ele + (4 - 1)]-1] > 0.0)
-					|| (Yglob[LOTOGO[8 * ele + (5 - 1)]-1] > 0.0)
-					|| (Yglob[LOTOGO[8 * ele + (6 - 1)]-1] > 0.0)
-					|| (Yglob[LOTOGO[8 * ele + (7 - 1)]-1] > 0.0)
-					|| (Yglob[LOTOGO[8 * ele + (8 - 1)]-1] > 0.0))
-				condition2 = true;
-
-			if (condition1 && condition2) {
-				if (yat >= 0) {
-					type4_disp[atom][2] = w;		//DISP[LOTOGO[ele][n[3]]][1];
-
-				} else {
-					type4_disp[atom][2] = -w;		//DISP[LOTOGO[ele][n[1]]][1];
-				}
+		if (augmented_element(ele)) {
+        		if ((xat == 0) && (yat == 0)) {
+                term2 = (pow(0.25, 2.0) + pow(yat, 2.0));
+                term3 = (pow(0.25, 2.0) - pow(yat, 2.0));
+                term7 = (3.0 * pow(0.25, 2.0) + pow(yat, 2.0));
+                arctan = atan2(yat, 0.25);
+        		} else
+                term2 = (pow(xat, 2.0) + pow(yat, 2.0));
+                term3 = (pow(xat, 2.0) - pow(yat, 2.0));
+                term7 = (3.0 * pow(xat, 2.0) + pow(yat, 2.0));
+                arctan = atan2(yat, xat);
+            u = term1 * (arctan + (xat * yat) / (term6 * term2));
+            //v = -term1 * (term4 * log(term2) + term3 / (term5 * term2));
+        		w = (bv * et[2] / (2.0 * PI)) * arctan;
+        		type4_disp[atom][0] = u;
+			if (yat >= 0) {
+				type4_disp[atom][2] = w;
+			} else {
+				type4_disp[atom][2] = -w;
 			}
-		} // end of loop on xfem elements
+		}
 
 	} // end of for loop on 'l' atoms
 
@@ -594,27 +571,17 @@ void atom_configuration() {
 			}
 
 			if (type == 4) {
-
 				z = coords[number][2] + type4_disp[number][2];
 				y = coords[number][1] + type4_disp[number][1];
 				x = coords[number][0] + type4_disp[number][0];
-
-				if (type4_disp[number][2] == 0.0) {
-					cout << number << " " << type4_disp[number][2] << "  " << x
-							<< "  " << y << "  " << z << endl;
-					cout << "Error in atom displacement calculations!" << endl;
-					exit(EXIT_FAILURE);
-				}
-			} // end of input while loop
+			}
 
 			myfile << number << "  " << type << "  " << mass << "  " << x
 					<< "  " << y << "  " << z << endl;
-
-		} //looping over lines which don't have #
-
-	} // End of input while loop on atoms
-
+        }//looping over lines which don't have #
+	} // end of input while loop
 }
+
 
 void nodal_displacement() {
     /* Get displacement of relaxed atoms and apply as BC to XFEM model

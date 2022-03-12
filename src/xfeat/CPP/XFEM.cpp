@@ -420,13 +420,14 @@ void calc_stress(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN],
                 if (augmented_element(IEL)) {
                         
                     for (int j = 1; j < NODEN; j++){
-                        /* Should be done for all DOF, bv should be vector */
-                        if (Yglob[LOTOGO[8*IEL + j - 1] - 1] > 0)
-                            DP[3*j] = DP[3*j] - 0.5*bv;
-                        else
-                            DP[3*j] = DP[3*j] + 0.5*bv;
+                        if (Yglob[LOTOGO[8*IEL + j - 1] - 1] > 0) {
+                            DP[3*j-2] -= 0.5*bv*et[0];
+                            DP[3*j]   -= 0.5*bv*et[2];
+                        } else {
+                            DP[3*j-2] += 0.5*bv*et[0];
+                            DP[3*j]   += 0.5*bv*et[2];
                         }
-                        
+                    }   
                 }
 
 				for (int i = 1; i < NDS; i++)
@@ -469,6 +470,7 @@ void create_mesh() {
 	nelem_full_big_box_x = (fem_elems_round[0]/2)*2 + num_space_x;
 	nelem_full_big_box_y = (fem_elems_round[1]/2)*2 + num_space_y;
 	nelem_full_big_box_z = (Lz+0.02)/(2*dist[2]);
+	if (nelem_full_big_box_z < 3) nelem_full_big_box_z=3;
 	bool skip_elem_x = 0;
 	bool skip_elem_y = 0;
 	newdist_fem[0] = (fem_big_box[0]-(0.5*sys_width[0]-0.05))/(fem_elems_round[0]/2);
@@ -543,7 +545,8 @@ void create_mesh() {
 			}
 			if (fabs(valx) < (0.5*sys_reduced[0]-0.02) && fabs(valy) < (0.5*sys_reduced[1]-0.02)) continue;
 			for (indz = 0; indz <= nelem_full_big_box_z; indz++) {
-				valz = indz*2*dist[2];
+				valz = indz*Lz/nelem_full_big_box_z;
+				//valz = indz*2*dist[2];
 				nodecount++;
 				Xglob.push_back(valx);
 				Yglob.push_back(valy);
@@ -784,21 +787,44 @@ void create_xfem_dis() {
 
     */
     int i, inode;
-    double yc;
+    double yc, hx, hy, sgny;
+    double term1, term2, term3, term4, term5, term6, term7, arctan;
     
     // outer boundary
     for (i = 0; i < NENFD; i++) {
 		inode = ncstr_o[i];
-		ENFRDISPglob[3*inode    ] = 0.0;
-		ENFRDISPglob[3*inode + 1] = 0.0;
-		ENFRDISPglob[3*inode + 2] = bv * atan2(Yglob[inode-1], Xglob[inode-1])/(2.0*PI);
+        hx = Xglob[inode-1];
+        hy = Yglob[inode-1];
+        sgny = -1.0; //(hy > 0.0) - (hy < 0.0);
+		term1 = (bv*et[0] / (2.0 * PI));
+        term4 = (1 - 2 * nu) / (4 * (1 - nu));
+        term5 = 4 * (1 - nu);
+        term6 = 2 * (1 - nu);
+		term2 = (pow(hx, 2.0) + pow(hy, 2.0));
+        term3 = (pow(hx, 2.0) - pow(hy, 2.0));
+        term7 = (3.0 * pow(hx, 2.0) + pow(hy, 2.0));
+        arctan = atan2(hy, hx);
+		ENFRDISPglob[3*inode    ] = term1 * (arctan + (hx * hy) / (term6 * term2));
+		ENFRDISPglob[3*inode + 1] = sgny * term1 * (term4 * log(term2) + term3 / (term5 * term2));
+		ENFRDISPglob[3*inode + 2] = 0.5*bv*et[2] * arctan/PI;
 	}	
 	//inner boundary
 	for (i = 0; i < NCONSNODE; i++) {
-	    inode = ncstr_i[i];
-		ENFRDISPglob[3*inode    ] = 0.0;
-		ENFRDISPglob[3*inode + 1] = 0.0;
-	    ENFRDISPglob[3*inode + 2] = bv * atan2(Yglob[inode-1], Xglob[inode-1])/(2.0*PI);
+        inode = ncstr_i[i];
+        hx = Xglob[inode-1];
+        hy = Yglob[inode-1];
+        sgny = -1.0; //(hy > 0.0) - (hy < 0.0);
+		term1 = (bv*et[0] / (2.0 * PI));
+        term4 = (1 - 2 * nu) / (4 * (1 - nu));
+        term5 = 4 * (1 - nu);
+        term6 = 2 * (1 - nu);
+		term2 = (pow(hx, 2.0) + pow(hy, 2.0));
+        term3 = (pow(hx, 2.0) - pow(hy, 2.0));
+        term7 = (3.0 * pow(hx, 2.0) + pow(hy, 2.0));
+        arctan = atan2(hy, hx);
+		ENFRDISPglob[3*inode    ] = term1 * (arctan + (hx * hy) / (term6 * term2));
+		ENFRDISPglob[3*inode + 1] = sgny * term1 * (term4 * log(term2) + term3 / (term5 * term2));
+		ENFRDISPglob[3*inode + 2] = 0.5*bv*et[2] * arctan/PI;
 	}
 }
 

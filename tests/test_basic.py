@@ -22,7 +22,8 @@ def test_rot():
 def test_atoms():
     hh = mod.shift-np.array([-0.0003508092037449728, -0.004243414970321879])
     assert(np.abs(np.amax(hh)) < 1.e-5)
-    assert(np.abs(mod.lp - 2.8553111596891387) < 1.e-5)
+    assert(np.linalg.norm(mod.dist - 
+                          np.array([6.994057, 4.038021, 2.472772])) < 1.e-5)
     assert(os.path.isfile('{}/relaxed_perfect_crystal_with_atom_type.imd'
                           .format(temp_dir)))
     

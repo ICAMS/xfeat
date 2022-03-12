@@ -17,6 +17,7 @@ double PI;
 std::string temp_dir;
 double fem_size;
 double EE3D[NDS][NDS];
+double nu;
 
 // atomistic quantities
 int natom = 0;
@@ -118,5 +119,6 @@ double JacInv();
 void STIFF(double XLOC[NODEN], double YLOC[NODEN], double ZLOC[NODEN]);
 void Assem(int Iel);
 void skylineTOcompressedarray();
+bool augmented_element(int i);
 
 #endif  /*  HEADER_XFEAT_  */
