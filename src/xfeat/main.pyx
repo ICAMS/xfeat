@@ -398,6 +398,8 @@ class Model(object):
         self.atom_grid.point_data['u_z'] = hh[1:self.natom+1, 2]
         hh = np.array(xfc.at_energy, dtype=np.double)
         self.atom_grid.point_data['epot'] = hh[1:self.natom+1]
+        self.int_at_node = xfc.interaction_atom_node
+        self.Ntype2 = xfc.NCONSNODE
         
     def shift_atoms(self):
         '''
@@ -470,22 +472,25 @@ class Model(object):
         None.
 
         '''
-        cdef double e23
+        cdef double eps
         
         if bc_type == 'stress':
-            e23 = val/self.C44
+            eps = val/self.C44
         elif bc_type == 'strain':
-            e23 = val
+            eps = val
         else:
             raise ValueError('Unsupported parameter bc_type: {}'
                              .format(bc_type))
-        xfc.apply_e23_outer(e23)
+        if comp == 'yz':
+            xfc.apply_e23_outer(eps)
+        elif comp == 'xy':
+            xfc.apply_e12_outer(eps)
         self.ubc = np.array(xfc.ENFRDISPglob[3:], dtype=np.double)
         self.grid.point_data['ubc_x'] = self.ubc[0::3]
         self.grid.point_data['ubc_y'] = self.ubc[1::3]
         self.grid.point_data['ubc_z'] = self.ubc[2::3]
-        self.solve()
-        self.shift_atoms()
+        #self.solve()
+        #self.shift_atoms()
 
     def calc_stress(self):
         '''

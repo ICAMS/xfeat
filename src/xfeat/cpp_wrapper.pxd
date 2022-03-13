@@ -32,6 +32,8 @@ cdef extern from "cpp_wrapper.h":
     double coords[20000][3]  # atomic positions in reference configuration, defined in set_up_atoms
     double at_disp[20000][3]  # atomic displacements, defined in nodal_displacement
     double at_energy[20000]  # potential energy of atoms
+    int interaction_atom_node[20000][2]
+    int NCONSNODE
     
     # XFEM quantities
     int NNODE  # number of nodes, defined in create_mesh
@@ -72,4 +74,5 @@ cdef extern from "cpp_wrapper.h":
     void nodal_displacement()  # calculate displacements on inner boundary nodes from type 2 atoms
     void create_xfem_dis()  # create displacements for Volterra dislocation in XFEM part
     void apply_e23_outer(double e23)  # apply shear strain on outer XFEM boundary
+    void apply_e12_outer(double e12)
     void calc_stress(double XLOC[9], double YLOC[9], double ZLOC[9], int IEL)  # evaluate element stress

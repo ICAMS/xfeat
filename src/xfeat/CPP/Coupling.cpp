@@ -10,7 +10,7 @@ void atom_node() {
 	double x1, x2, z1, y1, y2, z2;
 
 	for (int i = 0; i < NCONSNODE; i++) {
-		min_tol = 3.0;
+		min_tol = 1.0;
 		min = 100.0;
 
 		x1 = nID[i][1];

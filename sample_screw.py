@@ -5,10 +5,7 @@ Created on Sat Feb  5 17:26:13 2022
 
 @author: alexander
 """
-import numpy as np
-import matplotlib.pyplot as plt
-import pyvista as pv
-from vtk import VTK_HEXAHEDRON
+
 import xfeat
 
 
@@ -25,43 +22,66 @@ mat = {
        # W-Bop 6
        # C11. C12, C44 = 2.837825, 1.5317, 0.6256225
        # define crystallograhic orientation of crystal
-       'ori_x' : [ 1, 1,  1],
+       'ori_x' : [-1, 2, -1],
        'ori_y' : [-1, 0,  1],
-       'ori_z' : [-1, 2, -1],
+       'ori_z' : [ 1, 1,  1],
        }
 
 # create XFEM model 
-mod = xfeat.Model(mat, size=200)
-mod.atoms([15, 17, 2])
+mod = xfeat.Model(mat, size=400)
+# create atomic core
+mod.atoms()
+# create mesh and set up system stiffness matrix
 mod.mesh()
-#mod.grid.plot(show_edges=True)
-mod.init_dislo([1,0,0])
-#mod.plot('ubcx')
-#mod.plot('ubcy')
+# create screw dislocation
+mod.init_dislo()
+# plot nodes with boundary conditions
+mod.plot('ubcz')
+mod.plot('ubcy')
+mod.plot('uy')
 # iterate into equilibrium configuration
-for i in range(3):
+for i in range(15):
     mod.atom_bc()  # apply relaxed atom positions as BC to XFEM 
     mod.solve()  # colculate nodal displacements for mechanical equilibrium
     mod.shift_atoms()  # move boundary atoms according to strain field
     mod.relax_atoms(i)  # relax atomic structure with fixed boundary atoms
-    #mod.plot('ux')
-hh = np.array(mod.int_at_node)
-plt.scatter(mod.apos[hh[:mod.Ntype2,1], 0], mod.apos[hh[:,1], 1])
-plt.show()
-plt.scatter(mod.nodes[hh[:mod.Ntype2,0], 0], mod.nodes[hh[:,0], 1])
-plt.show()
-#mod.plot('sigyz')
-#mod.plot('uz')
-#mod.plot('dispz')
-#mod.plot('epot')
+    print('y-displacement after relaxation step {}.'.format(i))
+    mod.plot('uy')
+
+# plot nodes with boundary conditions
+mod.plot('ubcy')
+#plot nodal displacement
+mod.plot('uz')
+# plot stresses
+mod.plot('sigyz')
+# plot potential energy of atoms
+mod.plot('epot')
 
 # Apply sub-critical shear stress on boundary
-mod.apply_bc(0.55, comp='xy')
+mod.apply_bc(1.55)
 # iterate into relaxed configuration
 for i in range(1):
     mod.atom_bc()
     mod.solve()
     mod.shift_atoms()
-    mod.relax_atoms(i, name='applied_stress_055')
+    mod.relax_atoms(i, name='applied_stress_155')
 
+# plot stresses
+sig1 = mod.calc_stress()
+mod.plot_el('sigyz')
+mod.plot('epot')
 
+# Apply critical shear stress on boundary
+mod.apply_bc(1.65)
+# iterate into relaxed configuration
+for i in range(1):
+    mod.atom_bc()
+    mod.solve()
+    mod.shift_atoms()
+    mod.relax_atoms(i, name='applied_stress_165')
+
+# plot stresses
+sig2 = mod.calc_stress()
+mod.plot('sigyz')
+mod.plot('uz')
+mod.plot('epot')
