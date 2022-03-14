@@ -181,6 +181,8 @@ class Model(object):
         self.apos = hh[1:self.natom+1, 0:3]
         self.apos[:, 0] -= 0.5*self.Lx - self.shift[0]
         self.apos[:, 1] -= 0.5*self.Ly - self.shift[1]
+        hh = np.unique(self.apos[:, 2])
+        xfc.zdim = hh[-2] if self.dist[2] < self.lp else hh[-4]
         #self.apos[:, 2] -= 0.5*self.Lz
         
         # create pyVista atomistic grid

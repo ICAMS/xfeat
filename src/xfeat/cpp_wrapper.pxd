@@ -48,6 +48,7 @@ cdef extern from "cpp_wrapper.h":
     double A[7][10]
     double et[3]  # Burgers vector components
     double Lx, Ly, Lz  # lengths of axes of atomic box
+    double zdim
     double stress[6]  # Voigt stress tensor in element, calulated in calc_stress
     double strain[6]  # Voigt strain tensor in element, calulated in calc_stress
     vector[int] Iglob  # indices of compressed stiffness matrix

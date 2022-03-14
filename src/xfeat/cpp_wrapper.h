@@ -37,6 +37,7 @@ double DIR1[NODEN], DIR2[NODEN], DIR3[NODEN];
 double A[NDS][10];
 double et[3];
 double Lx, Ly, Lz;
+double zdim;
 double stress[6];
 double strain[6];
 std::vector<int> Iglob;

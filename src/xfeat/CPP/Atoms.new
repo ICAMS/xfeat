@@ -275,15 +275,15 @@ extern void atom_set_up(){
     // assign atom types
     n_type4 = 0;
 	n_type2 = 0;
-	double tf = 0.5;  // tf
+	double tf = 1.0;  // tf
 	for (count = 0; count < natom; count++) {
 	    x = coords[atom_id[count]][0];
 	    y = coords[atom_id[count]][1];
 	    z = coords[atom_id[count]][2];
-		if (((fabs(x-ref_coord_low[0]) < 1.0*plane_dist[0]) && (y >= ref_coord_low[1]-tf*plane_dist[1]) && (y <= ref_coord_high[1]+tf*plane_dist[1])) ||
-		    ((fabs(y-ref_coord_low[1]) < tf*plane_dist[1]) && (x >= ref_coord_low[0]-tf*plane_dist[0]) && (x <= ref_coord_high[0]+tf*plane_dist[0])) ||
-		    ((fabs(x-ref_coord_high[0]) < 1.0*plane_dist[0]) && (y >= ref_coord_low[1]-tf*plane_dist[1]) && (y <= ref_coord_high[1]+tf*plane_dist[1])) ||
-		    ((fabs(y-ref_coord_high[1]) < tf*plane_dist[1]) && (x >= ref_coord_low[0]-tf*plane_dist[0]) && (x <= ref_coord_high[0]+tf*plane_dist[0]))) {
+		if (((fabs(x-ref_coord_low[0]) < tf*plane_dist[0]) && (y >= ref_coord_low[1]-0.2*plane_dist[1]) && (y <= ref_coord_high[1]+0.2*plane_dist[1])) ||
+		    ((fabs(y-ref_coord_low[1]) < tf*plane_dist[1]) && (x >= ref_coord_low[0]-0.2*plane_dist[0]) && (x <= ref_coord_high[0]+0.2*plane_dist[0])) ||
+		    ((fabs(x-ref_coord_high[0]) < tf*plane_dist[0]) && (y >= ref_coord_low[1]-0.2*plane_dist[1]) && (y <= ref_coord_high[1]+0.2*plane_dist[1])) ||
+		    ((fabs(y-ref_coord_high[1]) < tf*plane_dist[1]) && (x >= ref_coord_low[0]-0.2*plane_dist[0]) && (x <= ref_coord_high[0]+0.2*plane_dist[0]))) {
 			type = 2;
             aID[n_type2][0] = atom_id[count];
             aID[n_type2][1] = x;
@@ -319,8 +319,8 @@ extern void atom_set_up(){
     shift[1] = -0.5*sys_width[1]-ref_coord_low_shift[1];
     //myfile_shift << shift[0] << "  " << shift[1] << endl;
 	
-	sys_reduced[0] = (0.5*sys_width[0]-0.05)*2;;
-	sys_reduced[1] = (0.5*sys_width[1]-0.05)*2;;
+	sys_reduced[0] = sys_width[0] - 0.1;
+	sys_reduced[1] = sys_width[1] - 0.1;
 	double fem_elems[2];
 	fem_elems[0] = (ceil(fem_size/dist[0])*dist[0]-sys_reduced[0])/dist[0];
 	fem_elems[1] = (ceil(fem_size/dist[1])*dist[1]-sys_reduced[1])/dist[1];

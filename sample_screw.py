@@ -7,7 +7,8 @@ Created on Sat Feb  5 17:26:13 2022
 """
 
 import xfeat
-
+import numpy as np
+import matplotlib.pyplot as plt
 
 # define material of single crystal as dictionary
 mat = {
@@ -37,17 +38,17 @@ mod.mesh()
 mod.init_dislo()
 # plot nodes with boundary conditions
 mod.plot('ubcz')
-mod.plot('ubcy')
-mod.plot('uy')
+#mod.plot('ubcy')
+#mod.plot('uy')
 # iterate into equilibrium configuration
-for i in range(15):
+for i in range(1):
     mod.atom_bc()  # apply relaxed atom positions as BC to XFEM 
     mod.solve()  # colculate nodal displacements for mechanical equilibrium
     mod.shift_atoms()  # move boundary atoms according to strain field
     mod.relax_atoms(i)  # relax atomic structure with fixed boundary atoms
     print('y-displacement after relaxation step {}.'.format(i))
     mod.plot('uy')
-
+"""
 # plot nodes with boundary conditions
 mod.plot('ubcy')
 #plot nodal displacement
@@ -65,7 +66,15 @@ for i in range(1):
     mod.solve()
     mod.shift_atoms()
     mod.relax_atoms(i, name='applied_stress_155')
-
+hh = np.array(mod.int_at_node)
+plt.scatter(mod.apos[hh[:mod.Ntype2,1]-1, 0], mod.apos[hh[:mod.Ntype2,1]-1, 1])
+plt.show()
+plt.scatter(mod.nodes[hh[:mod.Ntype2,0]-1, 0], mod.nodes[hh[:mod.Ntype2,0]-1, 1])
+plt.show()
+dvec = mod.nodes[hh[:mod.Ntype2,0]-1, :] - mod.apos[hh[:mod.Ntype2,1]-1, :]
+dist = np.linalg.norm(dvec, axis=1)
+print('Minimum distance b/w atom and node: {}, maximum distance: {}'
+      .format(np.amin(dist), np.amax(dist)))
 # plot stresses
 sig1 = mod.calc_stress()
 mod.plot_el('sigyz')
@@ -84,4 +93,4 @@ for i in range(1):
 sig2 = mod.calc_stress()
 mod.plot('sigyz')
 mod.plot('uz')
-mod.plot('epot')
+mod.plot('epot')"""

@@ -569,19 +569,19 @@ void create_mesh() {
 				}
 				// select nodes on the inner surface
 				if ((fabs(fabs(valx)-0.5*sys_reduced[0]) < 0.02 && fabs(valy) < 0.5*sys_reduced[1]+0.02)
-    				    || (fabs(valx) < 0.5*sys_reduced[0]+0.02 && fabs(fabs(valy)-0.5*sys_reduced[1]) < 0.01)) {
+    				    || (fabs(valx) < 0.5*sys_reduced[0]+0.02 && fabs(fabs(valy)-0.5*sys_reduced[1]) < 0.02)) {
                     nID[innersurfacecount][0] = nodecount;
                     nID[innersurfacecount][1] = valx;
                     nID[innersurfacecount][2] = valy;
                     nID[innersurfacecount][3] = valz;
 					innersurfacecount++;
-        			ncstr_i.push_back(nodecount);
-        				}
+            			ncstr_i.push_back(nodecount);
+        			}
 				if ((fabs(fabs(valx)-fem_big_box[0]) < 0.02) || (fabs(fabs(valy)-fem_big_box[1]) < 0.02)) {
 					outersurfacecount++;
-        			ncstr_o.push_back(nodecount);
-        				}
-			   }
+            			ncstr_o.push_back(nodecount);
+        			}
+			}
 		}
 	}
 

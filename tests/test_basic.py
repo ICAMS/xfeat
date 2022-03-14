@@ -20,21 +20,19 @@ def test_rot():
     assert(np.all(np.abs(mod.Cel - ref) < 1.e-5))
     
 def test_atoms():
-    hh = mod.shift-np.array([-0.0003508092037449728, -0.004243414970321879])
-    assert(np.abs(np.amax(hh)) < 1.e-5)
-    assert(np.linalg.norm(mod.dist - 
-                          np.array([6.994057, 4.038021, 2.472772])) < 1.e-5)
+    assert(np.allclose(mod.shift, [-0.0003505664426235455, 2.014768089432719]))
+    assert(np.allclose(mod.dist, [6.994057, 4.038021, 2.472772]))
     assert(os.path.isfile('{}/relaxed_perfect_crystal_with_atom_type.imd'
                           .format(temp_dir)))
     
 def test_mesh():
-    assert(mod.xdof == 20490)
+    assert(mod.xdof == 12180)
     assert(np.amax(mod.a_csr.diagonal()) - 18.516398876358256 < 1.e-5)
     
 def test_init_dislo():
-    assert(np.abs(mod.u[1440] + 0.0078246745716456) < 1.e-5)
-    assert(np.abs(mod.u[1441] + 0.006752027037675507) < 1.e-5)
-    assert(np.abs(mod.u[7440] - 0.0003205111755714418) < 1.e-5)
+    assert(np.abs(mod.u[242] - 1.2265517994551507) < 1.e-5)
+    assert(np.abs(mod.u[2] + 0.93147109) < 1.e-5)
+    assert(np.abs(mod.u[710] + 1.225510847802955) < 1.e-5)
     assert(os.path.isfile('{}/atomistic_dislocation_with_fem_solution.imd'
                           .format(temp_dir)))
 
@@ -45,16 +43,16 @@ def test_iteration():
     
     # calculate stresses
     sig0 = mod.calc_stress()
-    assert(np.abs(np.amax(sig0) - 2.2458018354577853) < 1.e-5)
-    assert(np.abs(np.amin(sig0) + 2.1907796579448022) < 1.e-5)
+    assert(np.abs(np.amax(sig0) - 4.502656482192202) < 1.e-5)
+    assert(np.abs(np.amin(sig0) + 4.31208232006253) < 1.e-5)
 
 def test_apply_bc():
     # Apply shear stress on boundary
     mod.apply_bc(1.55)
-    assert(np.abs(np.amax(mod.ubc) - 2.3061843499574897) < 1.e-5)
-    assert(np.abs(np.amin(mod.ubc) + 2.306184349957489) < 1.e-5)
-    assert(np.abs(mod.u[1440] + 0.012036538734587841) < 1.e-5)
-    assert(np.abs(mod.u[1439] + 1.623329283079101) < 1.e-5)
+    assert(np.abs(np.amax(mod.ubc) - 1.9829511276679916) < 1.e-5)
+    assert(np.abs(np.amin(mod.ubc) + 1.9829511276679916) < 1.e-5)
+    assert(np.abs(mod.u[242] - 1.2265517994551507) < 1.e-5)
+    assert(np.abs(mod.u[77] + 1.002022563515383) < 1.e-5)
     assert(os.path.isfile('{}/atomistic_dislocation_with_fem_solution.imd'
                           .format(temp_dir)))
 
@@ -89,9 +87,9 @@ os.makedirs(temp_dir)
 #print('CWD: ', os.getcwd())
 #print(os.path.isfile('JMakeConfig.jar'))
 # create XFEM model 
-mod = xfeat.Model(mat, size=200)
+mod = xfeat.Model(mat, size=150)
 # create atomic core
-mod.atoms()
+mod.atoms([7, 12, 3])
 # create mesh and set up system stiffness matrix
 mod.mesh()
 # create screw dislocation
