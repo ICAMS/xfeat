@@ -25,9 +25,7 @@ fire_mix            0.01
 fire_mixdec         0.99
 
 restrictionvector 4	0 0 0
-restrictionvector 3	1 1 1
 restrictionvector 2	1 1 1
-restrictionvector 1	1 1 1
 restrictionvector 0	1 1 1
 
 timestep        0.00001

@@ -6,12 +6,11 @@ void atom_node() {
     interaction_atom_node
     */
 
-	double min_tol, min, dis;
+	double min_tol, dis;
 	double x1, x2, z1, y1, y2, z2;
 
 	for (int i = 0; i < NCONSNODE; i++) {
-		min_tol = 1.0;
-		min = 100.0;
+		min_tol = 10.0;
 
 		x1 = nID[i][1];
 		y1 = nID[i][2];
@@ -19,8 +18,8 @@ void atom_node() {
 
 		for (int j = 0; j < n_type2; j++) {
 
-			if (z1 > (0.95*Lz))
-				z1 = z1 - Lz;
+			//if (z1 > (0.95*Lz))
+			//	z1 = z1 - Lz;
 
 			x2 = aID[j][1] - 0.5*Lx + shift[0];
 			y2 = aID[j][2] - 0.5*Ly + shift[1];
@@ -29,8 +28,6 @@ void atom_node() {
 			dis = pow(
 					pow((x1 - x2), 2.0) + pow((y1 - y2), 2.0)
 							+ pow((z1 - z2), 2.0), 0.5);
-							
-            if (dis < min) min = dis;
 
 			if (dis < min_tol) {
 				min_tol = dis;
@@ -41,7 +38,7 @@ void atom_node() {
 		} // end of j
 
 		if (min_tol >= 3.0) {
-			cout << "Error in finding atom node pair! " << min << endl;
+			cout << "Error in finding atom node pair! " << min_tol << endl;
 			cout << "Node: " << i << "  Type 2 atoms: " << n_type2 << endl;
 			cout << "Position: " << x1 << "  " << y1 << "  " << z1 << endl;
 			exit(EXIT_FAILURE);

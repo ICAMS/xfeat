@@ -39,16 +39,16 @@ mod.init_dislo([1,0,0])
 #mod.plot('ubcx')
 #mod.plot('ubcy')
 # iterate into equilibrium configuration
-for i in range(3):
+for i in range(1):
     mod.atom_bc()  # apply relaxed atom positions as BC to XFEM 
     mod.solve()  # colculate nodal displacements for mechanical equilibrium
     mod.shift_atoms()  # move boundary atoms according to strain field
     mod.relax_atoms(i)  # relax atomic structure with fixed boundary atoms
     #mod.plot('ux')
 hh = np.array(mod.int_at_node)
-plt.scatter(mod.apos[hh[:mod.Ntype2,1], 0], mod.apos[hh[:,1], 1])
+plt.scatter(mod.apos[hh[:mod.Ntype2,1], 0], mod.apos[hh[:mod.Ntype2,1], 1])
 plt.show()
-plt.scatter(mod.nodes[hh[:mod.Ntype2,0], 0], mod.nodes[hh[:,0], 1])
+plt.scatter(mod.nodes[hh[:mod.Ntype2,0], 0], mod.nodes[hh[:mod.Ntype2,0], 1])
 plt.show()
 #mod.plot('sigyz')
 #mod.plot('uz')

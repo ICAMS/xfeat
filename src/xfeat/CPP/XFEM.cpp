@@ -567,7 +567,9 @@ void create_mesh() {
                             					   + nelem_full_big_box_z + 2);
 					LOTOGO.push_back(nodecount + (shift_y+1)*(nelem_full_big_box_z+1) + 1);
 				}
-				if ((fabs(fabs(valx)-0.5*sys_reduced[0]) < 0.02 && fabs(valy) < 0.5*sys_reduced[1]+0.02) || (fabs(valx) < 0.5*sys_reduced[0]+0.02 && fabs(fabs(valy)-0.5*sys_reduced[1]) < 0.02)) {
+				// select nodes on the inner surface
+				if ((fabs(fabs(valx)-0.5*sys_reduced[0]) < 0.02 && fabs(valy) < 0.5*sys_reduced[1]+0.02)
+    				    || (fabs(valx) < 0.5*sys_reduced[0]+0.02 && fabs(fabs(valy)-0.5*sys_reduced[1]) < 0.01)) {
                     nID[innersurfacecount][0] = nodecount;
                     nID[innersurfacecount][1] = valx;
                     nID[innersurfacecount][2] = valy;
