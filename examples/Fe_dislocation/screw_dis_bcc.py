@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sat Feb  5 17:26:13 2022
+XFEAT 
+Create a screw dislocation in a bcc FE crystal and apply a shear stress until the
+dislocation becomes mobile.
 
-@author: alexander
+Author: Alexander Hartmaier
+Institution: ICAMS / Ruhr University Bochum, Germany
+Date: March 2022
+
+Published under the 
+Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License
 """
 
 import xfeat
@@ -29,11 +36,11 @@ mat = {
 # create XFEM model 
 mod = xfeat.Model(mat, size=500)
 # create atomic core
-mod.atoms()
+mod.atoms([10, 17, 3])
 # create mesh and set up system stiffness matrix
 mod.mesh()
 # create screw dislocation
-mod.init_dislo()
+mod.init_dislo([0, 0, 1])
 # plot nodes with boundary conditions
 #mod.plot('ubcz')
 

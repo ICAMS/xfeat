@@ -10,10 +10,11 @@
 XFEAt is a tool to combine atomistic simulation with boundary conditions from eXteneded Finite Element Method (XFEM). Useful for studying properties of dislocations under well-defined mechanical boundary conditions.
 
 ## Installation
-The XFEAt package requires an [Anaconda](https://www.anaconda.com/products/individual) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html) environment with a recent Python version. It can be installed from its GitHub repository via the following steps:
+XFEAt is written in [Cython](https://cython.org) and C++ and requires a C++ compiler. Cython will be installed together with all other dependencies. The Python interface requires an [Anaconda](https://www.anaconda.com/products/individual) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html) environment with a recent Python version. If a Conda environment and C++ compiler are available, the XFEAt package can be installed from its GitHub repository via the following steps:
 
 ```
 $ git clone https://github.com/ICAMS/xfeat ./XFEAt
+$ cd XFEAt
 $ conda env create -f environment.yml
 $ conda activate xfeat 
 $ make install
@@ -27,7 +28,7 @@ $ make IMDSYS=P4-gcc3 BIN_DIR="../../../Fe_MD" imd_eam_fire_homdef_stress_nbl
 $ cd ../../..
 ```
 
-might work.
+might work, although it produces a rather slow executable. For larger systems the optimization of compiler flags is strongly recommended.
 
 To test if the installation has been successful, run
 
@@ -36,15 +37,22 @@ $ pytest tests
 ```
 
 ## Examples
-An example that generates a screw dislocation in a bcc iron crystal and exposes it to a shear stress can be found under "examples/FE\_screw\_dislocation". 
+Examples that generate a screw or an edge dislocation in a bcc iron crystal and exposes them to a shear stress can be found under "examples/FE\_dislocations". 
+
+## Dependencies
+XFEAt requires the following packages as imports:
+
+ - [Cython](https://cython.org) as programming language
+ - [NumPy](http://numpy.scipy.org) for array handling
+ - [Scipy](https://www.scipy.org/) for numerical solutions, in particular for sparse matrix solving
+ - [pyVista](https://docs.pyvista.org) for visualization of numerical reuslults on XFEM grid and atomistic lattice
 
 ## License
-
 The XFEAt package comes with ABSOLUTELY NO WARRANTY. This is free
 software, and you are welcome to redistribute it under the conditions of
 the GNU General Public License
-([GPLv3](http://www.fsf.org/licensing/licenses/gpl.html))
+([GPLv3](http://www.fsf.org/licensing/licenses/gpl.html)).
 
 The contents of the examples and notebooks are published under the 
 Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License
-([CC BY-NC-SA 4.0](http://creativecommons.org/licenses/by-nc-sa/4.0/))
+([CC BY-NC-SA 4.0](http://creativecommons.org/licenses/by-nc-sa/4.0/)).
