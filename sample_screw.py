@@ -31,24 +31,33 @@ mat = {
 # create XFEM model 
 mod = xfeat.Model(mat, size=400)
 # create atomic core
-mod.atoms()
+mod.atoms([10, 17, 3])
 # create mesh and set up system stiffness matrix
 mod.mesh()
 # create screw dislocation
-mod.init_dislo()
+mod.init_dislo([0, 0, 1])
 # plot nodes with boundary conditions
-mod.plot('ubcz')
+#mod.plot('ubcz')
 #mod.plot('ubcy')
 #mod.plot('uy')
 # iterate into equilibrium configuration
-for i in range(1):
+for i in range(15):
     mod.atom_bc()  # apply relaxed atom positions as BC to XFEM 
     mod.solve()  # colculate nodal displacements for mechanical equilibrium
     mod.shift_atoms()  # move boundary atoms according to strain field
     mod.relax_atoms(i)  # relax atomic structure with fixed boundary atoms
     print('y-displacement after relaxation step {}.'.format(i))
     mod.plot('uy')
-"""
+
+plt.scatter(mod.apos[mod.a2n[:,1], 0], mod.apos[mod.a2n[:,1], 1])
+plt.show()
+plt.scatter(mod.nodes[mod.a2n[:,0], 0], mod.nodes[mod.a2n[:,0], 1])
+plt.show()
+dvec = mod.nodes[mod.a2n[:,0], :] - mod.apos[mod.a2n[:,1], :]
+dist = np.linalg.norm(dvec, axis=1)
+print('Minimum distance b/w atom and node: {}, maximum distance: {}'
+      .format(np.amin(dist), np.amax(dist)))
+
 # plot nodes with boundary conditions
 mod.plot('ubcy')
 #plot nodal displacement
@@ -93,4 +102,4 @@ for i in range(1):
 sig2 = mod.calc_stress()
 mod.plot('sigyz')
 mod.plot('uz')
-mod.plot('epot')"""
+mod.plot('epot')

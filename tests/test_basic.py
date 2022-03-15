@@ -43,8 +43,8 @@ def test_iteration():
     
     # calculate stresses
     sig0 = mod.calc_stress()
-    assert(np.abs(np.amax(sig0) - 4.502656482192202) < 1.e-5)
-    assert(np.abs(np.amin(sig0) + 4.31208232006253) < 1.e-5)
+    assert(np.abs(np.amax(sig0) - 4.292246989519117) < 1.e-5)
+    assert(np.abs(np.amin(sig0) + 4.356163786997495) < 1.e-5)
 
 def test_apply_bc():
     # Apply shear stress on boundary

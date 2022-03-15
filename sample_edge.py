@@ -7,8 +7,6 @@ Created on Sat Feb  5 17:26:13 2022
 """
 import numpy as np
 import matplotlib.pyplot as plt
-import pyvista as pv
-from vtk import VTK_HEXAHEDRON
 import xfeat
 
 
@@ -35,34 +33,34 @@ mod = xfeat.Model(mat, size=200)
 mod.atoms([15, 17, 2])
 mod.mesh()
 #mod.grid.plot(show_edges=True)
-mod.init_dislo([1,0,0])
+mod.init_dislo([1, 0, 0])
 #mod.plot('ubcx')
 #mod.plot('ubcy')
 # iterate into equilibrium configuration
-for i in range(1):
+for i in range(10):
     mod.atom_bc()  # apply relaxed atom positions as BC to XFEM 
     mod.solve()  # colculate nodal displacements for mechanical equilibrium
     mod.shift_atoms()  # move boundary atoms according to strain field
     mod.relax_atoms(i)  # relax atomic structure with fixed boundary atoms
-    #mod.plot('ux')
-hh = np.array(mod.int_at_node)
-plt.scatter(mod.apos[hh[:mod.Ntype2,1]-1, 0], mod.apos[hh[:mod.Ntype2,1]-1, 1])
+    mod.plot('uy')
+
+plt.scatter(mod.apos[mod.a2n[:,1], 0], mod.apos[mod.a2n[:,1], 1])
 plt.show()
-plt.scatter(mod.nodes[hh[:mod.Ntype2,0]-1, 0], mod.nodes[hh[:mod.Ntype2,0]-1, 1])
+plt.scatter(mod.nodes[mod.a2n[:,0], 0], mod.nodes[mod.a2n[:,0], 1])
 plt.show()
-dvec = mod.nodes[hh[:mod.Ntype2,0]-1, :] - mod.apos[hh[:mod.Ntype2,1]-1, :]
+dvec = mod.nodes[mod.a2n[:,0], :] - mod.apos[mod.a2n[:,1], :]
 dist = np.linalg.norm(dvec, axis=1)
 print('Minimum distance b/w atom and node: {}, maximum distance: {}'
       .format(np.amin(dist), np.amax(dist)))
-#mod.plot('sigyz')
-#mod.plot('uz')
-#mod.plot('dispz')
-#mod.plot('epot')
+mod.plot('sigxy')
+mod.plot('ux')
+mod.plot('dispx')
+mod.plot('epot')
 
-# Apply sub-critical shear stress on boundary
-#mod.apply_bc(0.55, comp='xy')
+# Apply shear stress on boundary
+mod.apply_bc(0.55, comp='xy')
 # iterate into relaxed configuration
-for i in range(0):
+for i in range(10):
     mod.atom_bc()
     mod.solve()
     mod.shift_atoms()

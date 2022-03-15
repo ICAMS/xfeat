@@ -181,8 +181,8 @@ class Model(object):
         self.apos = hh[1:self.natom+1, 0:3]
         self.apos[:, 0] -= 0.5*self.Lx - self.shift[0]
         self.apos[:, 1] -= 0.5*self.Ly - self.shift[1]
-        hh = np.unique(self.apos[:, 2])
-        xfc.zdim = hh[-2] if self.dist[2] < self.lp else hh[-4]
+        #hh = np.unique(self.apos[:, 2])
+        #xfc.zdim = hh[-2] #if self.dist[2] < self.lp else hh[-4]
         #self.apos[:, 2] -= 0.5*self.Lz
         
         # create pyVista atomistic grid
@@ -400,8 +400,10 @@ class Model(object):
         self.atom_grid.point_data['u_z'] = hh[1:self.natom+1, 2]
         hh = np.array(xfc.at_energy, dtype=np.double)
         self.atom_grid.point_data['epot'] = hh[1:self.natom+1]
-        self.int_at_node = xfc.interaction_atom_node
-        self.Ntype2 = xfc.NCONSNODE
+        self.Nibc = xfc.NCONSNODE  # number of inner boundary nodes
+        hh = xfc.interaction_atom_node
+        self.a2n = np.array(hh[0:self.Nibc][0:2], dtype=int) - 1
+        
         
     def shift_atoms(self):
         '''

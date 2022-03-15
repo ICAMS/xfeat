@@ -6,17 +6,22 @@ void atom_node() {
     interaction_atom_node
     */
 
-	double min_tol, dis;
+	double min_tol, dis, zmin;
 	double x1, x2, z1, y1, y2, z2;
+	bool found;
 
 	for (int i = 0; i < NCONSNODE; i++) {
+        	found = false;
 		min_tol = 1.0;
-
+		interaction_atom_node[i][0] = nID[i][0];
 		x1 = nID[i][1];
 		y1 = nID[i][2];
 		z1 = nID[i][3];
 		
-		if (z1 > 0.95*Lz) z1 = zdim; //-= dist[2]*0.67;
+		// "magic factor" to correct separation of rear nodes from atoms
+		// necessary because periodic atomic box is larger than bounding box 
+		// of atom positions
+		if (z1 > 0.95*Lz) z1 -= 2.4; 
 
 		for (int j = 0; j < n_type2; j++) {
 
@@ -26,20 +31,20 @@ void atom_node() {
 
 			dis = pow(
 					pow((x1 - x2), 2.0) + pow((y1 - y2), 2.0)
-							+ pow((z1 - z2), 2.0), 0.5);
+					+ pow((z1 - z2), 2.0), 0.5);
 
-			if (dis < min_tol) {
-				min_tol = dis;
-				interaction_atom_node[i][0] = nID[i][0];
+			if (dis < min_tol){
+                min_tol = dis;
+				found = true;
 				interaction_atom_node[i][1] = aID[j][0];
 			}
 		} // end of j
 
-		if (min_tol >= 1.0) {
+		if (!found) {
 			cout << "Error in finding atom node pair! " << min_tol << endl;
 			cout << "Node: " << i << "  Type 2 atoms: " << n_type2 << endl;
 			cout << "Position: " << x1 << "  " << y1 << "  " << z1 << endl;
-			//exit(EXIT_FAILURE);
+			exit(EXIT_FAILURE);
 		}
 
 	} // end of i

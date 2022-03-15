@@ -224,6 +224,8 @@ extern void atom_set_up(){
 		cout << " 'minwidth_y' (" << minwidth_y << ") too large for 'Ly' (" << Ly << ")" << endl;
 		exit(-1);
 	}
+	
+	zdim = Lz - plane_dist[2];
 
 	ref_coord_low[0] = min_coord[0];
 	ref_coord_low[1] = min_coord[1];
@@ -275,14 +277,18 @@ extern void atom_set_up(){
     // assign atom types
     n_type4 = 0;
 	n_type2 = 0;
-	double tf = 0.5;  // tf
+	double tf = 0.5;  // "magic factor" for selection of type 2 atoms
 	for (count = 0; count < natom; count++) {
+        	/* Each inner boundary node will be coupled to the closest type 2 atom
+        	in a node-atom-pair
+        	More type 2 atoms will make assignment more robust but less efficient
+        	*/
 	    x = coords[atom_id[count]][0];
 	    y = coords[atom_id[count]][1];
 	    z = coords[atom_id[count]][2];
-		if (((fabs(x-ref_coord_low[0]) < 1.0*plane_dist[0]) && (y >= ref_coord_low[1]-tf*plane_dist[1]) && (y <= ref_coord_high[1]+tf*plane_dist[1])) ||
+		if (((fabs(x-ref_coord_low[0]) < 1.2*plane_dist[0]) && (y >= ref_coord_low[1]-tf*plane_dist[1]) && (y <= ref_coord_high[1]+tf*plane_dist[1])) ||
 		    ((fabs(y-ref_coord_low[1]) < tf*plane_dist[1]) && (x >= ref_coord_low[0]-tf*plane_dist[0]) && (x <= ref_coord_high[0]+tf*plane_dist[0])) ||
-		    ((fabs(x-ref_coord_high[0]) < 1.0*plane_dist[0]) && (y >= ref_coord_low[1]-tf*plane_dist[1]) && (y <= ref_coord_high[1]+tf*plane_dist[1])) ||
+		    ((fabs(x-ref_coord_high[0]) < 1.2*plane_dist[0]) && (y >= ref_coord_low[1]-tf*plane_dist[1]) && (y <= ref_coord_high[1]+tf*plane_dist[1])) ||
 		    ((fabs(y-ref_coord_high[1]) < tf*plane_dist[1]) && (x >= ref_coord_low[0]-tf*plane_dist[0]) && (x <= ref_coord_high[0]+tf*plane_dist[0]))) {
 			type = 2;
             aID[n_type2][0] = atom_id[count];
