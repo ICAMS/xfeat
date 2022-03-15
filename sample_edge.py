@@ -42,7 +42,7 @@ for i in range(10):
     mod.solve()  # colculate nodal displacements for mechanical equilibrium
     mod.shift_atoms()  # move boundary atoms according to strain field
     mod.relax_atoms(i)  # relax atomic structure with fixed boundary atoms
-    mod.plot('uy')
+    #mod.plot('uy')
 
 plt.scatter(mod.apos[mod.a2n[:,1], 0], mod.apos[mod.a2n[:,1], 1])
 plt.show()

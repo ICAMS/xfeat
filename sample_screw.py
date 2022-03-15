@@ -41,13 +41,13 @@ mod.init_dislo([0, 0, 1])
 #mod.plot('ubcy')
 #mod.plot('uy')
 # iterate into equilibrium configuration
-for i in range(15):
+for i in range(10):
     mod.atom_bc()  # apply relaxed atom positions as BC to XFEM 
     mod.solve()  # colculate nodal displacements for mechanical equilibrium
     mod.shift_atoms()  # move boundary atoms according to strain field
     mod.relax_atoms(i)  # relax atomic structure with fixed boundary atoms
-    print('y-displacement after relaxation step {}.'.format(i))
-    mod.plot('uy')
+    #print('y-displacement after relaxation step {}.'.format(i))
+    #mod.plot('uy')
 
 plt.scatter(mod.apos[mod.a2n[:,1], 0], mod.apos[mod.a2n[:,1], 1])
 plt.show()
@@ -70,17 +70,17 @@ mod.plot('epot')
 # Apply sub-critical shear stress on boundary
 mod.apply_bc(1.55)
 # iterate into relaxed configuration
-for i in range(1):
+for i in range(10):
     mod.atom_bc()
     mod.solve()
     mod.shift_atoms()
     mod.relax_atoms(i, name='applied_stress_155')
-hh = np.array(mod.int_at_node)
-plt.scatter(mod.apos[hh[:mod.Ntype2,1]-1, 0], mod.apos[hh[:mod.Ntype2,1]-1, 1])
+
+plt.scatter(mod.apos[mod.a2n[:,1], 0], mod.apos[mod.a2n[:,1], 1])
 plt.show()
-plt.scatter(mod.nodes[hh[:mod.Ntype2,0]-1, 0], mod.nodes[hh[:mod.Ntype2,0]-1, 1])
+plt.scatter(mod.nodes[mod.a2n[:,0], 0], mod.nodes[mod.a2n[:,0], 1])
 plt.show()
-dvec = mod.nodes[hh[:mod.Ntype2,0]-1, :] - mod.apos[hh[:mod.Ntype2,1]-1, :]
+dvec = mod.nodes[mod.a2n[:,0], :] - mod.apos[mod.a2n[:,1], :]
 dist = np.linalg.norm(dvec, axis=1)
 print('Minimum distance b/w atom and node: {}, maximum distance: {}'
       .format(np.amin(dist), np.amax(dist)))
@@ -92,7 +92,7 @@ mod.plot('epot')
 # Apply critical shear stress on boundary
 mod.apply_bc(1.65)
 # iterate into relaxed configuration
-for i in range(1):
+for i in range(10):
     mod.atom_bc()
     mod.solve()
     mod.shift_atoms()

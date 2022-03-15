@@ -402,7 +402,7 @@ class Model(object):
         self.atom_grid.point_data['epot'] = hh[1:self.natom+1]
         self.Nibc = xfc.NCONSNODE  # number of inner boundary nodes
         hh = xfc.interaction_atom_node
-        self.a2n = np.array(hh[0:self.Nibc][0:2], dtype=int) - 1
+        self.a2n = np.array(hh[0:self.Nibc], dtype=int) - 1
         
         
     def shift_atoms(self):
