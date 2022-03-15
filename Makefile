@@ -4,8 +4,6 @@ build:
 	CYTHONIZE=1 ./setup.py build
 
 install:
-	$(RM) -r build dist src/*.egg-info
-	$(RM) -r src/xfeat/{basic.cpp,main.cpp}
 	CYTHONIZE=1 pip install .
 
 clean:
