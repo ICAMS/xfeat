@@ -34,7 +34,7 @@ mat = {
        }
 
 # create XFEM model 
-mod = xfeat.Model(mat, size=500)
+mod = xfeat.Model(mat, size=500, verbose=True)
 # create atomic core
 mod.atoms([10, 17, 3])
 # create mesh and set up system stiffness matrix
@@ -56,9 +56,9 @@ for i in range(10):
 # plot nodes with boundary conditions
 mod.plot('ubcz')
 # plot nodal displacement
-mod.plot('epot')
-# plot potential energy of atoms
 mod.plot('uz')
+# plot potential energy of atoms
+mod.plot('epot')
 # plot stresses
 mod.plot('sigyz')
 

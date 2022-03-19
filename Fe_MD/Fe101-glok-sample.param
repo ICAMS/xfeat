@@ -13,7 +13,7 @@ total_types	5
 ntypes          2
 box_from_header 1
 pbc_dirs        1 1 1
-cpu_dim         1 2 2
+# cpu_dim         1 2 2
 
 restrictionvector 4	1 1 1
 restrictionvector 2	1 1 1
@@ -32,8 +32,8 @@ eng_int         1
 checkpt_int     5000
 
 
-force_int 5000
-force_all  1
+# force_int 5000
+# force_all  1
 
 fnorm_threshold 1e-9
 

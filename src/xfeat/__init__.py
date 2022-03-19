@@ -4,7 +4,7 @@
 """Top-level package for XFEAt."""
 
 import os
-from xfeat.basic import rot_elast_tens, pv_mesh
+from xfeat.basic import rot_elast_tens, type_of_script
 from xfeat.main import Model
 
 __author__ = 'Karthikeyan Chockaligam, Alexander Hartmaier'

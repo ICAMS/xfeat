@@ -93,4 +93,4 @@ mod.atoms([7, 12, 3])
 # create mesh and set up system stiffness matrix
 mod.mesh()
 # create screw dislocation
-mod.init_dislo()
+mod.init_dislo([0, 0, 1])

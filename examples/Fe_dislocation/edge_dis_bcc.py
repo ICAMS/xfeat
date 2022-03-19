@@ -33,7 +33,7 @@ mat = {
        }
 
 # create XFEM model 
-mod = xfeat.Model(mat, size=200)
+mod = xfeat.Model(mat, size=200, verbose=True)
 mod.atoms([15, 17, 2])
 mod.mesh()
 mod.init_dislo([1, 0, 0])

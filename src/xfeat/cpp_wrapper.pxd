@@ -10,6 +10,7 @@ Created on Sun Feb  6 17:46:17 2022
 """
 from libcpp.string cimport string
 from libcpp.vector cimport vector
+from libcpp cimport bool
 
 cdef extern from "cpp_wrapper.cpp":
     pass
@@ -23,6 +24,7 @@ cdef extern from "cpp_wrapper.h":
     double fem_size  # size of FEM geometry, defined in Model.__init__
     double EE3D[7][7]  # rotatated material stiffness tensor, defined in Model.mesh
     double nu  # Poisson ratio
+    bool verbose  # indicate level of output
     
     # atomistic quantities
     int natom  # number of atoms, defined in set_up_atoms

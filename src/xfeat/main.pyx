@@ -15,11 +15,14 @@ from vtk import VTK_HEXAHEDRON
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
 from xfeat cimport cpp_wrapper as xfc
-from xfeat.basic import rot_elast_tens
+from xfeat.basic import rot_elast_tens, type_of_script
 
 class Model(object):
-    def __init__(self, mat, size=500):
+    def __init__(self, mat, size=500, verbose=False):
         self.fem_size = size  # size of FEM part
+        self.verbose = verbose
+        xfc.verbose = verbose
+        self.environment = type_of_script()
         self.bv = None  # Burgers vector
         self.dist = None  # reference distances of atoms along box edges
         self.nodes = None  # nodal positions
@@ -155,8 +158,9 @@ class Model(object):
                   .format(self.libs, self.temp+'/imd_create_cryst.param'))
         os.system('mv crystal.conf {}'.format(self.temp))
         # relax crystal with fire algorithm in IMD (Step 3)
-        os.system('cd {}; ./imd_eam_fire_homdef_stress_nbl -p Fe101-glok-sample.param'
-                  .format(self.md_dir))
+        stdout = '' if self.verbose else '> {}/stdout.txt'.format(self.temp)
+        os.system('cd {}; ./imd_eam_fire_homdef_stress_nbl -p Fe101-glok-sample.param {}'
+                  .format(self.md_dir, stdout))
         os.system('mv {0}/relaxed_perfect_crystal.imd.00000.ss {0}/relaxed_perfect_crystal.imd'\
                   .format(self.temp))
         os.system('rm {0}/*eng {0}/*itr {0}/*ssdef {0}/*chkpt; cd ..'\
@@ -293,13 +297,15 @@ class Model(object):
         F_vec = np.zeros(self.xdof, dtype=np.double)
         F_vec[0:self.NDF] = self.Fglob
 
-        print('\n********************\nstart solver\n')
+        if self.verbose:
+            print('\n********************\nstart solver\n')
         t0 = time.time()
         disp = spsolve(self.a_csr, F_vec)
         t1 = time.time()
         # https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.spsolve.html#scipy.sparse.linalg.spsolve
         assert(np.allclose(self.a_csr.dot(disp), F_vec))
-        print('Solution successful in {:6.5}s.'.format(t1-t0))
+        if self.verbose:
+            print('Solution successful in {:6.5}s.'.format(t1-t0))
         xfc.Dglob = disp
         
         # store solution with nodal indices
@@ -372,8 +378,9 @@ class Model(object):
         # create IMD input file with updates positions of type 4 atoms
         xfc.create_atom_dis()  # create dislocation in atomic core
         self.relax_atoms(name='init_dislocation')
-        print(f'\n Created dislocation with Burgers vector ({self.b_vec}) in model.')
-        print(f'Norm of Burgers vector is {self.bv} A')
+        if self.verbose:
+            print(f'\n Created dislocation with Burgers vector ({self.b_vec}) in model.')
+            print(f'Norm of Burgers vector is {self.bv} A')
         
     def atom_bc(self):
         '''
@@ -440,13 +447,15 @@ class Model(object):
         None.
 
         '''
+        stdout = '' if self.verbose else '> {}/stdout.txt'.format(self.temp)
         t0 = time.time()
-        os.system('cd {0}; ./imd_eam_fire_homdef_stress_nbl -p Fe101-fire-disloc-sample.param'
-                  .format(self.md_dir))
+        os.system('cd {}; ./imd_eam_fire_homdef_stress_nbl -p Fe101-fire-disloc-sample.param {}'
+                  .format(self.md_dir, stdout))
         t1 = time.time()
         if os.path.isfile('{}/relaxed_atomistic_dislocation_structure.00000.ssitr'
                      .format(self.temp)):
-            print('Relaxation of atoms successful in {:6.5}s.'.format(t1-t0))
+            if self.verbose:
+                print('Relaxation of atoms successful in {:6.5}s.'.format(t1-t0))
             i1 = int(i/10)
             i2 = i % 10
             # store relaxed config
@@ -567,7 +576,8 @@ class Model(object):
             sc = 'f_{}'.format(comp)
         else:
             raise ValueError('Unknown value for parameter tag: {}')
-        
+        if not self.environment == 'jupyter':
+            print('Displaying {}. Close graphics window to continue'.format(tag))
         pl = pv.Plotter()
         pl.camera_position = (1.0, 0.0, 2.1*self.fem_size)
         pl.camera.azimuth = 270
@@ -600,6 +610,8 @@ class Model(object):
         if not comp in self.comps:
             raise ValueError('Value for parameter "comp" not valid: {}'
                              .format(comp))
+        if not self.environment == 'jupyter':
+            print('Displaying {}. Close graphics window to continue'.format(tag))
         sc = '{}_{}'.format(tag, comp)
         title = '{}_{}'.format(tag, comp)
         if tag == 'sig':
@@ -629,7 +641,8 @@ class Model(object):
             title = r'u_x (A)'
         else:
             raise ValueError('Unknown value in parameter tag: {}'.format(tag))
-            
+        if not self.environment == 'jupyter':
+            print('Displaying {}. Close graphics window to continue'.format(tag))
         self.atom_grid.set_active_scalars(sc)
         vmin = np.amin(self.atom_grid.active_scalars)
         vmax = np.amax(self.atom_grid.active_scalars)

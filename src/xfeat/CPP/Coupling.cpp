@@ -218,10 +218,7 @@ void atom_element() {
 						a_ele_ID[n_type4][3] = z;
 						interaction_atom_element[n_type4][0] = i;  // number of element
 						interaction_atom_element[n_type4][1] = number;  // atom number in IMD file
-						//myfile << number << "    " << i << endl;
 						++n_type4;
-						//cout << n_type4 << endl;
-
 						found = true;
 						break;
 					}
@@ -243,12 +240,12 @@ void atom_element() {
 		} //looping over lines which don't have #
 
 	} // End of input while loop on atoms
-
+    if (verbose){
 	cout << "(DIFFX,DIFFY,DIFFZ) IS (" << diffx << "," << diffy << "," << diffz << ")" << endl;
 	cout << "(LXMIN,LXMAX) IS (" << lxmin << "," << lxmax << ")" << endl;
 	cout << "(LYMIN,LYMAX) IS (" << lymin << "," << lymax << ")" << endl;
 	cout << "Number of type 4 atoms found in the mesh: " << n_type4 << endl;
-
+    }
 }
 
 void displacement_interpolation() {
@@ -485,8 +482,9 @@ void displacement_interpolation() {
 		}
 
 	} // end of for loop on 'l' atoms
-
+    if (verbose){
 	cout << "Number of times atom found: " << check_count << endl;
+	}
 }
 
 void atom_configuration() {

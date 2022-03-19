@@ -469,7 +469,6 @@ void create_mesh() {
 	int count_elems_fem_y, count_elems_atom_y;
 	nelem_full_big_box_x = (fem_elems_round[0]/2)*2 + num_space_x;
 	nelem_full_big_box_y = (fem_elems_round[1]/2)*2 + num_space_y;
-	nelem_full_big_box_z = (Lz+0.02)/(2*dist[2]);
 	if (nelem_full_big_box_z < 3) nelem_full_big_box_z=3;
 	bool skip_elem_x = 0;
 	bool skip_elem_y = 0;
@@ -484,7 +483,9 @@ void create_mesh() {
 	int innersurfacecount = 0;
 	int outersurfacecount = 0;
 	int backsurfacecount = 0;
-	cout << "newdist_fem is (" << newdist_fem[0] << "," << newdist_fem[1] << "," << newdist_fem[2] << ") ; newdist_atom is (" << newdist_atom[0] << "," << newdist_atom[1] << "," << newdist_atom[2] << ")" << endl;
+	if (verbose){
+        	cout << "newdist_fem is (" << newdist_fem[0] << "," << newdist_fem[1] << "," << newdist_fem[2] << ") ; newdist_atom is (" << newdist_atom[0] << "," << newdist_atom[1] << "," << newdist_atom[2] << ")" << endl;
+	}
 	distx = newdist_fem[0];
 	distz = newdist_fem[2];
 	displacementx = 0.0;
@@ -734,17 +735,20 @@ void skylineTOcompressedarray() {
 		}
 		Iglob.push_back(j);
 	}
-    int size_Aglob = NEWAglob.size(); 
+    int size_Aglob = NEWAglob.size();
+    if (verbose){
 	cout << size_Aglob << "  " << Iglob.size() << "   " << Jglob.size() << endl;
     cout << " n = " << NDF + 3 * NLAG << " nmax = " << size_Aglob << endl;
+    }
 }
 
 void init_matrix() {
     /* Assemble stiffness matrix
     */
     double XLOC[NODEN], YLOC[NODEN], ZLOC[NODEN];
+    if (verbose){
 	cout << "LOOPING OVER ELEMENTS " << endl;
-
+    }
 	for (int IEL = 0; IEL < NEL; IEL++) {
 		for (int j = 0; j < 8; j++) {
 			XLOC[j+1] = Xglob[LOTOGO[8 * IEL + j] - 1];
@@ -755,8 +759,9 @@ void init_matrix() {
 		STIFF(XLOC, YLOC, ZLOC);
 		Assem(IEL);
 	}
-
+    if (verbose){
 	cout << "COMPUTING COMPRESSED ARRAY " << endl;
+	}
 	lagrange_constraint();
 	skylineTOcompressedarray();
 }

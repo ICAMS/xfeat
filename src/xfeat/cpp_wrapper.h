@@ -18,6 +18,7 @@ std::string temp_dir;
 double fem_size;
 double EE3D[NDS][NDS];
 double nu;
+bool verbose;
 
 // atomistic quantities
 int natom = 0;

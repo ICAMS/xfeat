@@ -342,13 +342,13 @@ extern void atom_set_up(){
 	fem_big_box[0] = 0.5*(((double)fem_elems_round[0])*dist[0]+sys_reduced[0]);
 	fem_big_box[1] = 0.5*(((double)fem_elems_round[1])*dist[1]+sys_reduced[1]);
 	fem_big_box[2] = Lz;
-
+    if (verbose){
     cout << "FEM Inner BOX DIMENTIONS(X,Y) : " << -(0.5*sys_width[0]-0.05)<<"," << -(0.5*sys_width[1]-0.05)  <<"   "<< 0.5*sys_width[0]-0.05<< "," << 0.5*sys_width[1]-0.05  << endl;
 	cout << "FEM BIG BOX (X,Y,Z): " << -(fem_big_box[0]) << "," << -(fem_big_box[1]) <<"   "<< fem_big_box[0] << "," << fem_big_box[1] << "   " << fem_big_box[2] << endl;
 	cout << "NUMBER OF MESHES OF HALF EDGES IN FEM (X,Y): " << fem_elems_round[0]/2 << "  " << fem_elems_round[1]/2 << endl;
 	cout << "NUMBER OF GAPS BETWEEN ATOMS IN MD MODEL AND THE FEM INNER BOX MESH NUMBER (X,Y): " << num_space_x << "  " << num_space_y << endl;
 	cout << "dist is (" << dist[0] << "," << dist[1] << "," << dist[2] << ") ; plane_dist is (" << plane_dist[0] << "," << plane_dist[1] << "," << plane_dist[2] << ")" << endl;
-	
+	}
 }
 
 void create_atom_dis() {
@@ -475,9 +475,5 @@ void create_atom_dis() {
 					<< "  " << y << "  " << z << endl;
 
 		} //looping over lines which don't have #
-
 	} // End of input while loop on atoms
-
-	//cout << "Total type 2 atoms inside the system box : " << type_atom << endl;
-
 }
