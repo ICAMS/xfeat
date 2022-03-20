@@ -20,15 +20,21 @@ $ conda activate xfeat
 $ make install
 ```
 
-Furthermore, an executable of the [ITAP Molecular Dynamics Program](http://imd.itap.physik.uni-stuttgart.de) (IMD) is required. This software is licensed under the GNU General Public License GPLv3 and a copy of IMD is included in the XFEAt distribution in "libs/imd". See the [IMD user guide] (http://imd.itap.physik.uni-stuttgart.de/userguide/compiling.html) for ways to build the executable "imd\_eam\_fire\_homdef\_stress\_nbl", which should be placed in the directory "XFEAt/Fe\_MD". On many systems something like
+Furthermore, an executable of the [ITAP Molecular Dynamics Program](http://imd.itap.physik.uni-stuttgart.de) (IMD) is required. This software is licensed under the GNU General Public License GPLv3 and a copy of IMD is included in the XFEAt distribution in "libs/imd". See the [IMD user guide] (http://imd.itap.physik.uni-stuttgart.de/userguide/compiling.html) for ways to build the executable "imd\_eam\_fire\_homdef\_stress\_nbl" or "imd\_mpi\_eam\_fire\_homdef\_stress\_nbl" (for MPI support), which should be placed in the directory "XFEAt/Fe\_MD". On many systems something like
 
 ```
-$ cd libs/imd/src
-$ make IMDSYS=P4-gcc3 BIN_DIR="../../../Fe_MD" imd_eam_fire_homdef_stress_nbl
-$ cd ../../..
+$ cd libs/imd
+$ make IMDSYS=P4-gcc3 BIN_DIR="../../Fe_MD" imd_eam_fire_homdef_stress_nbl
+$ cd ../..
 ```
 
 might work, although it produces a rather slow executable. For larger systems the optimization of compiler flags is strongly recommended.
+
+On ICAMS CIP pool use:
+
+```
+make IMDSYS=x86_64-c2_icc BIN_DIR="../../../Fe_MD" imd_mpi_eam_fire_homdef_stress_nbl
+```
 
 To test if the installation has been successful, run
 

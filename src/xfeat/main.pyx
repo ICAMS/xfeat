@@ -73,8 +73,12 @@ class Model(object):
         if not os.path.exists(self.md_dir):
             raise RuntimeError('Directory "{}" is not existing.'
                                .format(self.md_dir))
-        if not os.path.isfile(self.md_dir+'/imd_eam_fire_homdef_stress_nbl'):
-            raise RuntimeError('IMD executable "imd_eam_fire_homdef_stress_nbl" is not existing in path {}.'
+        if os.path.isfile(self.md_dir+'/imd_mpi_eam_fire_homdef_stress_nbl'):
+            self.imd_exec = 'mpirun -np 4 ./imd_mpi_eam_fire_homdef_stress_nbl'
+        elif os.path.isfile(self.md_dir+'/imd_eam_fire_homdef_stress_nbl'):
+            self.imd_exec = './imd_eam_fire_homdef_stress_nbl'
+        else:
+            raise RuntimeError('IMD executable "imd_(mpi_)eam_fire_homdef_stress_nbl" is not existing in path {}.'
                                .format(self.md_dir))
         tdir = self.temp.encode()
         xfc.temp_dir = tdir
@@ -159,8 +163,8 @@ class Model(object):
         os.system('mv crystal.conf {}'.format(self.temp))
         # relax crystal with fire algorithm in IMD (Step 3)
         stdout = '' if self.verbose else '> {}/stdout.txt'.format(self.temp)
-        os.system('cd {}; ./imd_eam_fire_homdef_stress_nbl -p Fe101-glok-sample.param {}'
-                  .format(self.md_dir, stdout))
+        os.system('cd {}; {} -p Fe101-glok-sample.param {}'
+                  .format(self.md_dir, self.imd_exec, stdout))
         os.system('mv {0}/relaxed_perfect_crystal.imd.00000.ss {0}/relaxed_perfect_crystal.imd'\
                   .format(self.temp))
         os.system('rm {0}/*eng {0}/*itr {0}/*ssdef {0}/*chkpt; cd ..'\
@@ -451,8 +455,8 @@ class Model(object):
         '''
         stdout = '' if self.verbose else '> {}/stdout.txt'.format(self.temp)
         t0 = time.time()
-        os.system('cd {}; ./imd_eam_fire_homdef_stress_nbl -p Fe101-fire-disloc-sample.param {}'
-                  .format(self.md_dir, stdout))
+        os.system('cd {}; {} -p Fe101-fire-disloc-sample.param {}'
+                  .format(self.md_dir, self.imd_exec, stdout))
         t1 = time.time()
         if os.path.isfile('{}/relaxed_atomistic_dislocation_structure.00000.ssitr'
                      .format(self.temp)):
