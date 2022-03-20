@@ -276,6 +276,8 @@ class Model(object):
         celltypes = np.empty(self.NEL, dtype=np.uint8)
         celltypes[:] = VTK_HEXAHEDRON
         self.grid = pv.UnstructuredGrid(cells.ravel(), celltypes, self.nodes)
+        print('Generated mesh with {} elements and {} nodes around atomistic core.'
+              .format(self.NEL, self.Nnode))
 
 
     def solve(self):
@@ -298,14 +300,14 @@ class Model(object):
         F_vec[0:self.NDF] = self.Fglob
 
         if self.verbose:
-            print('\n********************\nstart solver\n')
+            print('\n********************\nStarting XFEM solver\n')
         t0 = time.time()
         disp = spsolve(self.a_csr, F_vec)
         t1 = time.time()
         # https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.spsolve.html#scipy.sparse.linalg.spsolve
         assert(np.allclose(self.a_csr.dot(disp), F_vec))
-        if self.verbose:
-            print('Solution successful in {:6.5}s.'.format(t1-t0))
+        #if self.verbose:
+        print('XFEM solution obtained in {:6.5}s.'.format(t1-t0))
         xfc.Dglob = disp
         
         # store solution with nodal indices
@@ -378,9 +380,9 @@ class Model(object):
         # create IMD input file with updates positions of type 4 atoms
         xfc.create_atom_dis()  # create dislocation in atomic core
         self.relax_atoms(name='init_dislocation')
-        if self.verbose:
-            print(f'\n Created dislocation with Burgers vector ({self.b_vec}) in model.')
-            print(f'Norm of Burgers vector is {self.bv} A')
+        #if self.verbose:
+        print(f'\nCreated dislocation with Burgers vector ({self.b_vec}) in model.')
+        print(f'Norm of Burgers vector is {self.bv} A')
         
     def atom_bc(self):
         '''
@@ -454,8 +456,8 @@ class Model(object):
         t1 = time.time()
         if os.path.isfile('{}/relaxed_atomistic_dislocation_structure.00000.ssitr'
                      .format(self.temp)):
-            if self.verbose:
-                print('Relaxation of atoms successful in {:6.5}s.'.format(t1-t0))
+            #if self.verbose:
+            print('Relaxation of atoms obtained in {:6.5}s.'.format(t1-t0))
             i1 = int(i/10)
             i2 = i % 10
             # store relaxed config
@@ -488,7 +490,7 @@ class Model(object):
         cdef double eps
         
         if bc_type == 'stress':
-            eps = val/self.C44
+            eps = val/self.C44  # should be self.Cel component in GPa
         elif bc_type == 'strain':
             eps = val
         else:
