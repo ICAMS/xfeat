@@ -1,6 +1,10 @@
 numpy
 cython
+matplotlib
 scipy
 pytest
 pyvista
+jupyter
+jupyterlab
+ipyvtklink
 
