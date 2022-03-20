@@ -33,7 +33,7 @@ might work, although it produces a rather slow executable. For larger systems th
 On ICAMS CIP pool use:
 
 ```
-make IMDSYS=x86_64-c2_icc BIN_DIR="../../../Fe_MD" imd_mpi_eam_fire_homdef_stress_nbl
+make IMDSYS=x86_64-c2_icc BIN_DIR="../../Fe_MD" imd_mpi_eam_fire_homdef_stress_nbl
 ```
 
 To test if the installation has been successful, run
