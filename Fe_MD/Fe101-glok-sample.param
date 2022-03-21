@@ -13,7 +13,7 @@ total_types	5
 ntypes          2
 box_from_header 1
 pbc_dirs        1 1 1
-# cpu_dim         1 2 2
+cpu_dim         1 2 2
 
 restrictionvector 4	1 1 1
 restrictionvector 2	1 1 1

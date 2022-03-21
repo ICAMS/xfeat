@@ -8,6 +8,7 @@ __pycache__/
 *#
 *.nfs*
 *.egg*
+imd_*eam_fire_homdef_stress_nbl
 
 # C extensions
 *.so
