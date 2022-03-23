@@ -544,7 +544,7 @@ class Model(object):
         return s_field
         
             
-    def plot_nodal(self, tag, comp='z', atoms=True, deformed=None):
+    def plot_nodal(self, tag, comp='z', atoms=True, at_size=None, deformed=None):
         '''
         Plot given component of nodal solution.
 
@@ -563,6 +563,8 @@ class Model(object):
         # select component to be plotted
         comp = comp.lower()
         tag = tag.lower()
+        if at_size is None:
+            at_size = 10
         if tag[-1] == 'z' or tag[-1] == 'y' or tag[-1] == 'x':
             comp = tag[-1]
             tag = tag[0:-1]
@@ -594,7 +596,7 @@ class Model(object):
             self.atom_grid.set_active_scalars(sc)
             umin = np.minimum(umin, np.amin(self.atom_grid.active_scalars))
             umax = np.maximum(umax, np.amax(self.atom_grid.active_scalars))
-            pl.add_mesh(self.atom_grid, style='points', point_size=10,
+            pl.add_mesh(self.atom_grid, style='points', point_size=at_size,
                         render_points_as_spheres=True, show_scalar_bar=False,
                         clim=(umin, umax))
         pl.add_mesh(self.grid, show_edges=True, clim=(umin, umax),
@@ -631,8 +633,10 @@ class Model(object):
                                          title=title))
         return
     
-    def plot_at(self, tag, deformed=None):
+    def plot_at(self, tag, at_size=None, deformed=None):
         tag = tag.lower()
+        if at_size is None:
+            at_size = 20
         if tag == 'epot':
             sc = 'epot'
             title = r'Epot (eV)'
@@ -657,28 +661,28 @@ class Model(object):
         # pl = pv.Plotter()
         # pl.camera_position = (1.0, 0.0, 2*self.fem_size)
         # pl.camera.azimuth = 270
-        # pl.add_mesh(self.atom_grid, style='points', point_size=20,
+        # pl.add_mesh(self.atom_grid, style='points', point_size=at_size,
         #             render_points_as_spheres=True)
         # pl.show()
-        self.atom_grid.plot(cpos='xy', style='points', point_size=20,
+        self.atom_grid.plot(cpos='xy', style='points', point_size=at_size,
                     render_points_as_spheres=True, clim=(vmin, vmax),
                     scalar_bar_args=dict(vertical=True, position_y=0.25,
                                  title=title))
 
-    def plot(self, tag, atoms=None, deformed=None):
+    def plot(self, tag, atoms=None, at_size=None, deformed=None):
         tag = tag.lower()
         if atoms is None:
             atoms = True
         if tag == 'epot':
-            self.plot_at(tag, deformed=deformed)
+            self.plot_at(tag, at_size=at_size, deformed=deformed)
         elif tag == 'uz' or tag == 'uy' or tag == 'ux':
-            self.plot_nodal(tag, atoms=atoms, deformed=deformed)
+            self.plot_nodal(tag, atoms=atoms, at_size=at_size, deformed=deformed)
         elif tag == 'fz' or tag == 'fy' or tag == 'fx':
             self.plot_nodal(tag, atoms=atoms, deformed=deformed)
         elif tag == 'ubcz' or tag == 'ubcy' or tag == 'ubcx':
-            self.plot_nodal(tag, atoms=atoms, deformed=deformed)
+            self.plot_nodal(tag, atoms=atoms, at_size=at_size, deformed=deformed)
         elif tag == 'dispx' or tag == 'dispy' or tag == 'dispz':
-            self.plot_at(tag, deformed=deformed)
+            self.plot_at(tag, at_size=at_size, deformed=deformed)
         elif tag == 'sigxx' or tag == 'sigyy' or tag == 'sigzz' or\
              tag == 'sigxy' or tag == 'sigyz' or tag == 'sigxz':
             self.plot_el(tag='sig', comp=tag[-2:])

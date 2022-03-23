@@ -69,7 +69,7 @@ void atom_element() {
 	ifstream inputfile_atom;
 	inputfile_atom.open(temp_dir + "/relaxed_perfect_crystal_with_atom_type.imd");
 
-	if (inputfile_atom == (ifstream)NULL) {
+	if (! inputfile_atom.is_open())  {
 		cout << "File 'relaxed_perfect_crystal_with_atom_type.imd' does not exist!" << endl;
 		exit(EXIT_FAILURE);
 	}
@@ -501,7 +501,7 @@ void atom_configuration() {
 	ifstream inputfile_atom;
 	inputfile_atom.open(temp_dir + "/relaxed_atomistic_dislocation_structure.00000.ss");
 
-	if (inputfile_atom == (ifstream)NULL) {
+	if (! inputfile_atom.is_open())  {
 		cout << "File relaxed_atomistic_dislocation_structure.00000.ss does not exist!" << endl;
 		exit(EXIT_FAILURE);
 	}
@@ -597,7 +597,7 @@ void nodal_displacement() {
 	ifstream inputfile_atom_disp;
 	inputfile_atom_disp.open(temp_dir + "/relaxed_atomistic_dislocation_structure.00000.ss");
 
-	if (inputfile_atom_disp == (ifstream)NULL) {
+	if (! inputfile_atom_disp.is_open())  {
 		cout << "File 'relaxed_atomistic_dislocation_structure' does not exist!" << endl;
 		exit(EXIT_FAILURE);
 	}

@@ -24,11 +24,11 @@ Furthermore, an executable of the [ITAP Molecular Dynamics Program](http://imd.i
 
 ```
 $ cd libs/imd
-$ make IMDSYS=P4-gcc3 BIN_DIR="../../Fe_MD" imd_eam_fire_homdef_stress_nbl
+$ make IMDSYS=x86_64-gcc3 BIN_DIR="../../Fe_MD" imd_eam_fire_homdef_stress_nbl
 $ cd ../..
 ```
 
-might work, although it produces a rather slow executable. For larger systems the optimization of compiler flags is strongly recommended.
+might work, although it produces a rather slow executable. For larger atomic models it is strongly recommended to use a parallel executable with the MPI option and to apply optimized compiler flags.
 
 On ICAMS CIP pool use:
 
