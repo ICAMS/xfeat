@@ -26,7 +26,7 @@ extern void atom_set_up(){
 	ifstream inputfile;
 	inputfile.open(temp_dir + "/relaxed_perfect_crystal.imd");
 
-	if (inputfile == NULL) {
+	if (inputfile == (ifstream)NULL) {
 		cout << "File 'relaxed_perfect_crystal.imd' does not exist!" << endl;
 		exit(EXIT_FAILURE);
 	}
@@ -362,7 +362,7 @@ void create_atom_dis() {
 	ifstream inputfile_atom;
 	inputfile_atom.open(temp_dir + "/relaxed_perfect_crystal_with_atom_type.imd");
 
-	if (inputfile_atom == NULL) {
+	if (inputfile_atom == (ifstream)NULL) {
 		cout << "File 'relaxed_perfect_crystal_with_atom_type.imd' does not exist!" << endl;
 		exit(EXIT_FAILURE);
 	}

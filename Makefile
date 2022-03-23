@@ -4,7 +4,7 @@ build:
 	CYTHONIZE=1 ./setup.py build
 
 install:
-	CYTHONIZE=1 pip install .
+	CYTHONIZE=1 pip install . --user
 
 clean:
 	$(RM) -r build dist src/*.egg-info
